@@ -2,7 +2,7 @@
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
-    <title>EVE Buyback Direct - Pro Analytics</title>
+    <title>EVE Buyback Direct - Regional Markets</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
@@ -17,15 +17,27 @@
         <h1 class="text-3xl font-black text-yellow-500 mb-8 uppercase italic tracking-wider">Buyback <span class="text-white">Analytics</span></h1>
         
         <div class="grid grid-cols-1 xl:grid-cols-4 gap-8">
-            <div class="xl:col-span-1 space-y-6">
+            <div class="xl:col-span-1 space-y-4">
+                
+                <div class="bg-gray-900 rounded-lg border border-gray-800 p-2 shadow-lg">
+                    <label class="block text-[10px] text-gray-500 uppercase font-bold mb-1 ml-2">Źródło Wyceny:</label>
+                    <select id="marketRegion" class="w-full bg-black border border-gray-800 p-3 font-bold text-xs text-yellow-500 rounded outline-none focus:border-yellow-600 cursor-pointer">
+                        <option value="global">Średnia ESI (Błyskawicznie)</option>
+                        <option value="10000002">Jita / The Forge (Najwyższy Buy)</option>
+                        <option value="10000043">Amarr / Domain (Najwyższy Buy)</option>
+                        <option value="10000032">Dodixie / Sinq Laison (Najwyższy Buy)</option>
+                        <option value="10000030">Rens / Heimatar (Najwyższy Buy)</option>
+                    </select>
+                </div>
+
                 <div>
-                    <textarea id="invInput" class="w-full h-64 bg-gray-900 border border-gray-800 p-4 font-mono text-[11px] text-green-400 rounded-lg outline-none focus:border-yellow-600 custom-scroll" placeholder="Wklej inwentarz..."></textarea>
+                    <textarea id="invInput" class="w-full h-56 bg-gray-900 border border-gray-800 p-4 font-mono text-[11px] text-green-400 rounded-lg outline-none focus:border-yellow-600 custom-scroll" placeholder="Wklej inwentarz..."></textarea>
                     <button id="calcBtn" onclick="runProcessor()" class="w-full mt-2 bg-yellow-600 hover:bg-yellow-500 text-black font-black py-4 rounded-lg uppercase transition-all shadow-lg active:scale-95">Oblicz Wycenę</button>
                 </div>
                 
-                <div class="p-6 bg-gray-900 rounded-xl border border-gray-800 shadow-xl">
-                    <div class="text-[10px] text-gray-500 uppercase font-bold mb-1 tracking-widest">Suma Netto (-10%):</div>
-                    <div id="finalNet" class="text-2xl font-black text-green-500">0 ISK</div>
+                <div class="p-6 bg-gray-900 rounded-xl border border-gray-800 shadow-xl relative overflow-hidden">
+                    <div class="text-[10px] text-gray-500 uppercase font-bold mb-1 tracking-widest relative z-10">Suma Netto (-10%):</div>
+                    <div id="finalNet" class="text-2xl font-black text-green-500 relative z-10">0 ISK</div>
                 </div>
 
                 <div class="p-4 bg-gray-900 rounded-xl border border-gray-800 shadow-xl hidden" id="chartContainer">
@@ -35,10 +47,9 @@
             </div>
 
             <div class="xl:col-span-3 space-y-8">
-                
                 <div class="bg-gray-900 rounded-xl border border-gray-800 overflow-hidden shadow-xl text-xs">
                     <div class="bg-black/50 p-3 border-b border-gray-800 flex justify-between items-center">
-                        <span class="text-yellow-500 font-bold uppercase tracking-widest text-[10px]">Przedmioty Wycenione (Rynek)</span>
+                        <span class="text-yellow-500 font-bold uppercase tracking-widest text-[10px]">Przedmioty Wycenione</span>
                         <span id="valuedCount" class="text-gray-500 font-mono">0 itemów</span>
                     </div>
                     <div class="max-h-[400px] overflow-y-auto custom-scroll">
@@ -60,7 +71,7 @@
 
                 <div class="bg-[#1a0f0f] rounded-xl border border-red-900/30 overflow-hidden shadow-xl text-xs">
                     <div class="bg-black/50 p-3 border-b border-red-900/30 flex justify-between items-center">
-                        <span class="text-red-400 font-bold uppercase tracking-widest text-[10px]">Wycena Manualna (Rzadkie / Limitowane / Brak Danych)</span>
+                        <span class="text-red-400 font-bold uppercase tracking-widest text-[10px]">Wycena Manualna (Brak Zleceń Kupna / Limitowane)</span>
                         <span id="zeroCount" class="text-gray-500 font-mono">0 itemów</span>
                     </div>
                     <div class="max-h-[250px] overflow-y-auto custom-scroll">
@@ -78,14 +89,13 @@
                         </table>
                     </div>
                 </div>
-
             </div>
         </div>
     </div>
 
     <script>
-        let myChart = null; // Zmienna globalna dla wykresu
-        Chart.defaults.color = '#6b7280'; // Kolor czcionek wykresu
+        let myChart = null;
+        Chart.defaults.color = '#6b7280';
         Chart.defaults.font.family = 'monospace';
 
         async function runProcessor() {
@@ -93,17 +103,18 @@
             const validTable = document.getElementById('validTable');
             const zeroTable = document.getElementById('zeroTable');
             const finalNet = document.getElementById('finalNet');
-            const chartContainer = document.getElementById('chartContainer');
+            const regionId = document.getElementById('marketRegion').value;
             const rawInput = document.getElementById('invInput').value.trim();
 
             if (!rawInput) return;
 
             btn.disabled = true;
             btn.innerText = "PRZETWARZANIE...";
-            validTable.innerHTML = "<tr><td colspan='4' class='p-10 text-center text-yellow-500 animate-pulse'>Pobieranie danych z ESI...</td></tr>";
+            validTable.innerHTML = "<tr><td colspan='4' class='p-10 text-center text-yellow-500 animate-pulse'>Skanowanie Rynku ESI...</td></tr>";
             zeroTable.innerHTML = "";
 
             try {
+                // 1. Parser
                 const lines = rawInput.split('\n').filter(l => l.trim() !== "");
                 const inventoryMap = {};
 
@@ -128,7 +139,7 @@
 
                 const uniqueNames = Object.keys(inventoryMap);
 
-                // Pobieranie ID
+                // 2. Pobieranie ID
                 const idRes = await fetch('https://esi.evetech.net/latest/universe/ids/', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
@@ -140,25 +151,43 @@
                 const foundItems = idData.inventory_types || idData.inventory || [];
                 if (foundItems.length === 0) throw new Error("ESI nie rozpoznało nazw.");
 
-                // Pobieranie Cen
-                const priceRes = await fetch('https://esi.evetech.net/latest/markets/prices/');
-                if (!priceRes.ok) throw new Error("Błąd ESI (Prices)");
-                const priceData = await priceRes.json();
-                
+                // 3. Pobieranie Cen (Logika Regionalna)
                 const prices = {};
-                priceData.forEach(p => prices[p.type_id] = p.adjusted_price || 0);
 
+                if (regionId === 'global') {
+                    const priceRes = await fetch('https://esi.evetech.net/latest/markets/prices/');
+                    if (!priceRes.ok) throw new Error("Błąd ESI (Prices)");
+                    const priceData = await priceRes.json();
+                    priceData.forEach(p => prices[p.type_id] = p.adjusted_price || 0);
+                } else {
+                    // Pobieranie zleceń KUPNA dla konkretnego regionu
+                    validTable.innerHTML = "<tr><td colspan='4' class='p-10 text-center text-yellow-500 animate-pulse'>Pobieranie zleceń regionalnych (może zająć kilka sekund)...</td></tr>";
+                    
+                    const fetchRegionalPrice = async (item) => {
+                        try {
+                            const res = await fetch(`https://esi.evetech.net/latest/markets/${regionId}/orders/?datasource=tranquility&order_type=buy&type_id=${item.id}`);
+                            if (!res.ok) return { id: item.id, price: 0 };
+                            const orders = await res.json();
+                            // Szukamy najwyższej oferty kupna (Max Buy)
+                            const maxBuy = orders.length > 0 ? Math.max(...orders.map(o => o.price)) : 0;
+                            return { id: item.id, price: maxBuy };
+                        } catch (e) {
+                            return { id: item.id, price: 0 };
+                        }
+                    };
+
+                    // Wysyłamy wszystkie zapytania naraz (Promise.all)
+                    const pricePromises = foundItems.map(item => fetchRegionalPrice(item));
+                    const priceResults = await Promise.all(pricePromises);
+                    priceResults.forEach(p => prices[p.id] = p.price);
+                }
+
+                // 4. Budowanie Tabel
                 validTable.innerHTML = "";
-                zeroTable.innerHTML = "";
                 let totalValue = 0;
-                
                 let validItemsCount = 0;
                 let zeroItemsCount = 0;
-                
-                // Dane do wykresu
                 let chartData = [];
-
-                // Fallback dla zepsutych obrazków (skrzynia cargo ID 23)
                 const fallbackImg = "onerror=\"this.onerror=null; this.src='https://images.evetech.net/types/23/icon?size=32';\"";
 
                 foundItems.forEach(item => {
@@ -195,15 +224,14 @@
                     }
                 });
 
-                if(validItemsCount === 0) validTable.innerHTML = "<tr><td colspan='4' class='p-4 text-center'>Brak rynkowych przedmiotów</td></tr>";
-                if(zeroItemsCount === 0) zeroTable.innerHTML = "<tr><td colspan='3' class='p-4 text-center text-green-900'>Brak przedmiotów do wyceny ręcznej!</td></tr>";
+                if(validItemsCount === 0) validTable.innerHTML = "<tr><td colspan='4' class='p-4 text-center'>Brak przedmiotów ze zleceniami kupna w tym regionie!</td></tr>";
+                if(zeroItemsCount === 0) zeroTable.innerHTML = "<tr><td colspan='3' class='p-4 text-center text-green-900'>Wszystko wycenione pomyślnie!</td></tr>";
 
                 document.getElementById('valuedCount').innerText = `${validItemsCount} itemów`;
                 document.getElementById('zeroCount').innerText = `${zeroItemsCount} itemów`;
 
                 finalNet.innerText = Math.floor(totalValue * 0.9).toLocaleString() + " ISK";
 
-                // RENDEROWANIE WYKRESU
                 renderChart(chartData);
 
             } catch (err) {
@@ -218,10 +246,8 @@
             const ctx = document.getElementById('valueChart').getContext('2d');
             document.getElementById('chartContainer').classList.remove('hidden');
 
-            // Sortowanie od najdroższych
             data.sort((a, b) => b.value - a.value);
 
-            // Bierzemy top 5 najdroższych itemów, resztę wrzucamy do "Inne"
             let labels = [];
             let values = [];
             let otherValue = 0;
@@ -240,10 +266,7 @@
                 values.push(otherValue);
             }
 
-            // Jeśli stary wykres istnieje, niszczymy go przed narysowaniem nowego
-            if (myChart) {
-                myChart.destroy();
-            }
+            if (myChart) myChart.destroy();
 
             myChart = new Chart(ctx, {
                 type: 'doughnut',
@@ -251,14 +274,7 @@
                     labels: labels,
                     datasets: [{
                         data: values,
-                        backgroundColor: [
-                            '#ca8a04', // yellow-600
-                            '#eab308', // yellow-500
-                            '#854d0e', // yellow-800
-                            '#374151', // gray-700
-                            '#4b5563', // gray-600
-                            '#1f2937'  // gray-800 (Inne)
-                        ],
+                        backgroundColor: ['#ca8a04', '#eab308', '#854d0e', '#374151', '#4b5563', '#1f2937'],
                         borderWidth: 1,
                         borderColor: '#111'
                     }]
@@ -276,7 +292,7 @@
                             }
                         }
                     },
-                    cutout: '70%' // Grubość pierścienia
+                    cutout: '70%'
                 }
             });
         }
