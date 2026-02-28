@@ -2,83 +2,107 @@
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
-    <title>EVE Buyback - ESI Professional</title>
+    <title>EVE Buyback Tool - ESI Direct</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-900 text-gray-100 min-h-screen p-8 font-sans">
-    <div class="max-w-5xl mx-auto">
-        <h1 class="text-3xl font-black text-yellow-500 mb-6 uppercase tracking-tighter">EVE Market Direct API</h1>
-        
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div class="lg:col-span-2">
-                <textarea id="inventory" class="w-full h-96 bg-gray-800 border border-gray-700 p-4 font-mono text-sm rounded-lg focus:ring-2 focus:ring-yellow-600 outline-none text-green-400" placeholder="Wklej inwentarz..."></textarea>
-                <button onclick="processInventory()" id="mainBtn" class="w-full mt-4 bg-yellow-600 hover:bg-yellow-500 text-black font-black py-4 rounded-lg uppercase transition-all">
+<body class="bg-gray-900 text-gray-100 min-h-screen p-6 font-sans">
+    <div class="max-w-4xl mx-auto">
+        <header class="mb-8 border-b border-gray-800 pb-4">
+            <h1 class="text-3xl font-black text-yellow-500 uppercase tracking-tighter">EVE Buyback Direct</h1>
+            <p id="status" class="text-xs text-blue-400 mt-1 font-mono uppercase italic">Inicjalizacja systemu...</p>
+        </header>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div class="space-y-4">
+                <textarea id="inventoryInput" 
+                    class="w-full h-96 bg-gray-800 border border-gray-700 p-4 font-mono text-sm text-green-400 rounded-lg focus:ring-2 focus:ring-yellow-600 outline-none" 
+                    placeholder="Wklej tutaj inwentarz z gry (Ctrl+A, Ctrl+C)..."></textarea>
+                <button onclick="calculate()" id="calcBtn"
+                    class="w-full bg-yellow-600 hover:bg-yellow-500 text-black font-black py-4 rounded-lg transition-all uppercase shadow-lg">
                     Oblicz Wycenę (Live ESI)
                 </button>
             </div>
 
-            <div class="bg-gray-800 p-6 rounded-lg border border-gray-700 shadow-2xl h-fit">
-                <h2 class="text-xs font-bold text-gray-500 uppercase tracking-widest mb-4">Podsumowanie rynkowe</h2>
-                <div id="total" class="text-3xl font-black mb-2">0 <span class="text-sm text-gray-600">ISK</span></div>
-                <div id="net" class="text-xl font-bold text-green-500 border-t border-gray-700 pt-2">Netto: 0 ISK</div>
-                <div id="log" class="mt-6 text-[10px] font-mono text-blue-400 h-32 overflow-y-auto bg-black p-2 rounded">Czekam na dane...</div>
+            <div class="bg-gray-800 p-6 rounded-xl border border-gray-700 shadow-2xl h-fit">
+                <h2 class="text-gray-500 text-[10px] font-bold uppercase mb-4 tracking-widest">Podsumowanie</h2>
+                <div id="totalValue" class="text-3xl font-black mb-1">0 <span class="text-xs text-gray-600">ISK</span></div>
+                <div id="netValue" class="text-xl font-bold text-green-500 mb-6">Netto (-10%): 0 ISK</div>
+                
+                <div class="p-3 bg-black rounded border border-gray-700">
+                    <p class="text-[10px] text-gray-500 uppercase mb-1">Log systemowy:</p>
+                    <div id="log" class="text-[10px] font-mono text-blue-300 h-24 overflow-y-auto italic">Czekam na dane...</div>
+                </div>
             </div>
         </div>
     </div>
 
     <script>
-        const TAX = 0.10;
+        const TAX_RATE = 0.10; //
 
-        async function processInventory() {
-            const log = (msg) => document.getElementById('log').innerHTML += `> ${msg}<br>`;
-            const input = document.getElementById('inventory').value;
-            const lines = input.split('\n').filter(l => l.trim() !== "");
+        async function calculate() {
+            const statusLog = document.getElementById('log');
+            const input = document.getElementById('inventoryInput').value;
+            const log = (msg) => statusLog.innerHTML = `> ${msg}<br>` + statusLog.innerHTML;
             
-            const itemsMap = {};
+            const lines = input.split('\n').filter(l => l.trim() !== "");
+            const items = {};
+
+            // Parsowanie linii
             lines.forEach(line => {
                 const parts = line.split('\t');
                 if (parts.length >= 2) {
                     const name = parts[0].trim();
                     const qty = parseInt(parts[parts.length - 1].replace(/\D/g, '')) || 0;
-                    itemsMap[name] = (itemsMap[name] || 0) + qty;
+                    items[name] = (items[name] || 0) + qty;
                 }
             });
 
-            const names = Object.keys(itemsMap);
-            log(`Wysłano ${names.length} nazw do ESI...`);
+            const names = Object.keys(items);
+            if (names.length === 0) {
+                log("Brak danych do przeliczenia.");
+                return;
+            }
 
             try {
-                // 1. Zamiana NAZW na ID
+                log("Wysyłanie nazw do ESI Universe...");
+                // 1. Zamiana nazw na ID przez oficjalne ESI
                 const idRes = await fetch('https://esi.evetech.net/latest/universe/ids/?datasource=tranquility&language=en', {
                     method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(names)
                 });
+                
+                if (!idRes.ok) throw new Error("ESI Universe Error");
                 const idData = await idRes.json();
-                const inventoryIds = idData.inventory || [];
+                const inventory = idData.inventory || [];
 
-                // 2. Pobranie CEN dla tych ID
-                log("Pobieranie aktualnych cen...");
+                log("Pobieranie cen rynkowych...");
+                // 2. Pobieranie cen z ESI
                 const priceRes = await fetch('https://esi.evetech.net/latest/markets/prices/');
-                const prices = await priceRes.json();
-                const priceLookup = {};
-                prices.forEach(p => priceLookup[p.type_id] = p.adjusted_price);
+                const priceData = await priceRes.json();
+                const prices = {};
+                priceData.forEach(p => prices[p.type_id] = p.adjusted_price || 0);
 
                 // 3. Obliczenia
                 let total = 0;
-                inventoryIds.forEach(item => {
-                    const qty = itemsMap[item.name];
-                    const price = priceLookup[item.id] || 0;
+                inventory.forEach(item => {
+                    const qty = items[item.name];
+                    const price = prices[item.id] || 0;
                     total += price * qty;
                 });
 
-                document.getElementById('total').innerHTML = `${Math.floor(total).toLocaleString()} <span class="text-sm text-gray-600">ISK</span>`;
-                document.getElementById('net').innerText = `Netto: ${Math.floor(total * (1 - TAX)).toLocaleString()} ISK`;
-                log("Gotowe!");
+                document.getElementById('totalValue').innerHTML = `${Math.floor(total).toLocaleString()} <span class="text-xs text-gray-600">ISK</span>`;
+                document.getElementById('netValue').innerText = `Netto: ${Math.floor(total * (1 - TAX_RATE)).toLocaleString()} ISK`;
+                log("Wycena zakończona pomyślnie.");
 
             } catch (err) {
-                log("BŁĄD ESI: " + err.message);
+                log("BŁĄD: " + err.message);
+                console.error(err);
             }
         }
+
+        // Status na start
+        document.getElementById('status').innerText = "System gotowy - komunikacja z ESI aktywna";
     </script>
 </body>
 </html>
