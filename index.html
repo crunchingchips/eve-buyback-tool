@@ -1,131 +1,121 @@
-<!DOCTYPE html>
-<html lang="pl">
-<head>
-    <meta charset="UTF-8">
-    <title>EVE Buyback Elite - Fixed API Flow</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-[#050505] text-gray-200 min-h-screen p-8 font-sans">
-    <div class="max-w-6xl mx-auto">
-        <div class="flex justify-between items-center border-b border-gray-800 pb-6 mb-8">
-            <h1 class="text-3xl font-black text-yellow-500 italic uppercase underline decoration-gray-700">Market Processor <span class="text-white text-xl uppercase not-italic font-light">v2.1</span></h1>
-            <div id="apiStatus" class="text-[10px] font-mono text-yellow-600 animate-pulse uppercase">Czekam na akcję...</div>
-        </div>
+<script>
+    async function runProcessor() {
+        console.log("=== START PROCESORA ===");
+        
+        const btn = document.getElementById('calcBtn');
+        const table = document.getElementById('itemTable');
+        const finalNet = document.getElementById('finalNet');
+        const rawInput = document.getElementById('invInput').value.trim();
 
-        <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
-            <div class="lg:col-span-1 space-y-4">
-                <textarea id="invInput" class="w-full h-96 bg-gray-900 border border-gray-800 p-4 font-mono text-[11px] text-green-400 rounded-xl outline-none focus:ring-1 focus:ring-yellow-600 shadow-2xl" placeholder="Wklej inwentarz (Ctrl+C w grze)..."></textarea>
-                <button onclick="runProcessor()" class="w-full bg-yellow-600 hover:bg-yellow-500 text-black font-black py-4 rounded-xl uppercase shadow-lg transition-all active:scale-95">
-                    PRZETWÓRZ DANE ESI
-                </button>
-                <div class="p-6 bg-gray-900 rounded-2xl border border-gray-800 shadow-2xl">
-                    <div class="text-[10px] text-gray-500 uppercase font-bold mb-1 tracking-widest">Suma Netto (-10%):</div>
-                    <div id="finalNet" class="text-3xl font-black text-green-500 tabular-nums uppercase tracking-tighter italic">0 ISK</div>
-                </div>
-            </div>
+        console.log("[KROK 1] Surowy tekst z pola (długość):", rawInput.length);
 
-            <div class="lg:col-span-3">
-                <div class="bg-gray-900 rounded-2xl border border-gray-800 overflow-hidden shadow-2xl">
-                    <table class="w-full text-left text-[12px]">
-                        <thead class="bg-black/50 text-gray-500 uppercase text-[10px] font-bold tracking-widest">
-                            <tr>
-                                <th class="px-6 py-4">Przedmiot</th>
-                                <th class="px-6 py-4 text-right">Ilość</th>
-                                <th class="px-6 py-4 text-right">Cena (Adj)</th>
-                                <th class="px-4 py-4 text-right">Suma</th>
-                            </tr>
-                        </thead>
-                        <tbody id="itemTable" class="divide-y divide-gray-800 font-mono">
-                            </tbody>
-                    </table>
-                    <div id="emptyMsg" class="p-20 text-center text-gray-700 italic font-light uppercase tracking-widest text-xs">Brak danych do wyświetlenia</div>
-                </div>
-            </div>
-        </div>
-    </div>
+        if (!rawInput) {
+            console.log("[!] Puste pole, przerywam.");
+            return;
+        }
 
-    <script>
-        async function runProcessor() {
-            const status = document.getElementById('apiStatus');
-            const table = document.getElementById('itemTable');
-            const emptyMsg = document.getElementById('emptyMsg');
-            const rawInput = document.getElementById('invInput').value;
+        btn.disabled = true;
+        btn.innerText = "PRZETWARZANIE...";
+        table.innerHTML = "<tr><td colspan='4' class='p-10 text-center text-yellow-500'>Łączenie z ESI...</td></tr>";
+
+        try {
+            const lines = rawInput.split('\n').filter(l => l.trim() !== "");
+            console.log(`[KROK 2] Znaleziono linii tekstu: ${lines.length}`, lines);
             
-            status.innerText = "Łączenie z ESI...";
-            status.className = "text-[10px] font-mono text-yellow-500 animate-pulse uppercase";
-            table.innerHTML = "";
-            emptyMsg.style.display = "none";
-
-            // 1. Parser: Wyciąganie nazw i ilości
             const inventoryMap = {};
-            rawInput.split('\n').filter(l => l.trim() !== "").forEach(line => {
-                const cols = line.split(/\t| {2,}/); 
-                if (cols.length >= 2) {
-                    const name = cols[0].trim();
-                    const qty = parseInt(cols[cols.length - 1].replace(/\s/g, '').replace(/\D/g, '')) || 0;
-                    inventoryMap[name] = (inventoryMap[name] || 0) + qty;
+
+            // Parser
+            lines.forEach(line => {
+                let name = "";
+                let qty = 1;
+                if (line.includes('\t')) {
+                    const parts = line.split('\t');
+                    name = parts[0].trim();
+                    qty = parseInt(parts[1].replace(/\D/g, '')) || 1; 
+                } else {
+                    const match = line.trim().match(/^(.*?)\s+([\d\s]+)$/);
+                    if (match) {
+                        name = match[1].trim();
+                        qty = parseInt(match[2].replace(/\D/g, '')) || 1;
+                    } else {
+                        name = line.trim();
+                    }
                 }
+                if (name) inventoryMap[name] = (inventoryMap[name] || 0) + qty;
             });
 
+            console.log("[KROK 3] Sparsowana mapa inwentarza (Przedmioty + Ilość):", inventoryMap);
+
             const uniqueNames = Object.keys(inventoryMap);
-            if (uniqueNames.length === 0) {
-                status.innerText = "Błąd: Pusty inwentarz";
-                emptyMsg.style.display = "block";
-                return;
+            console.log("[KROK 4] Czyste nazwy wysyłane do ESI (POST /universe/ids/):", uniqueNames);
+
+            // Pobieranie ID
+            console.log("[KROK 5] Oczekuję na odpowiedź ESI Universe...");
+            const idRes = await fetch('https://esi.evetech.net/latest/universe/ids/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                body: JSON.stringify(uniqueNames)
+            });
+            
+            if (!idRes.ok) throw new Error(`Błąd ESI (Universe): ${idRes.status}`);
+            const idData = await idRes.json();
+            
+            console.log("[KROK 6] Pełna odpowiedź z ESI (zobacz co jest w środku!):", idData);
+            
+            const foundItems = idData.inventory_types || [];
+            console.log(`[KROK 7] Rozpoznane przedmioty (inventory_types): ${foundItems.length}`, foundItems);
+
+            if (foundItems.length === 0) {
+                console.warn("[UWAGA] ESI nie zwróciło żadnych 'inventory_types'!");
+                throw new Error("ESI nie rozpoznało żadnej nazwy. Zły format tekstu.");
             }
 
-            try {
-                // 2. Krok 1: POST Universe (Nazwy -> ID)
-                // Dodajemy nagłówek Content-Type, aby uniknąć "szarego" zapytania
-                const idRes = await fetch('https://esi.evetech.net/latest/universe/ids/', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(uniqueNames)
-                });
-                
-                if (!idRes.ok) throw new Error("Błąd ESI Universe: " + idRes.status);
-                const idData = await idRes.json();
-                const foundItems = idData.inventory_types || [];
+            // Pobieranie Cen
+            console.log("[KROK 8] Pobieram cennik rynkowy...");
+            const priceRes = await fetch('https://esi.evetech.net/latest/markets/prices/');
+            if (!priceRes.ok) throw new Error(`Błąd ESI (Prices): ${priceRes.status}`);
+            const priceData = await priceRes.json();
+            
+            console.log(`[KROK 9] Pomyślnie pobrano cen dla ${priceData.length} przedmiotów z rynku.`);
+            
+            const prices = {};
+            priceData.forEach(p => prices[p.type_id] = p.adjusted_price || 0);
 
-                // 3. Krok 2: GET Prices (Ceny rynkowe)
-                const priceRes = await fetch('https://esi.evetech.net/latest/markets/prices/');
-                if (!priceRes.ok) throw new Error("Błąd ESI Markets: " + priceRes.status);
-                const priceData = await priceRes.json();
-                
-                const pricesMap = {};
-                priceData.forEach(p => pricesMap[p.type_id] = p.adjusted_price || 0);
+            // Generowanie Tabeli
+            table.innerHTML = "";
+            let totalValue = 0;
 
-                // 4. Budowanie Tabeli i Sumowanie
-                let totalValue = 0;
-                foundItems.forEach(item => {
-                    const qty = inventoryMap[item.name];
-                    const unitPrice = pricesMap[item.id] || 0;
-                    const subtotal = unitPrice * qty;
-                    totalValue += subtotal;
+            foundItems.forEach(item => {
+                const qty = inventoryMap[item.name];
+                const price = prices[item.id] || 0;
+                const subtotal = price * qty;
+                totalValue += subtotal;
 
-                    table.innerHTML += `
-                        <tr class="hover:bg-yellow-500/5 transition-colors border-b border-gray-900/50">
-                            <td class="px-6 py-4 flex items-center gap-4">
-                                <img src="https://images.evetech.net/types/${item.id}/icon?size=32" class="w-7 h-7 rounded border border-gray-800 shadow-lg" loading="lazy">
-                                <span class="font-sans font-bold text-gray-300 text-[13px]">${item.name}</span>
-                            </td>
-                            <td class="px-6 py-4 text-right text-yellow-600 font-bold">${qty.toLocaleString()}</td>
-                            <td class="px-6 py-4 text-right text-gray-600">${Math.floor(unitPrice).toLocaleString()}</td>
-                            <td class="px-4 py-4 text-right font-black text-white">${Math.floor(subtotal).toLocaleString()} ISK</td>
-                        </tr>`;
-                });
+                console.log(`[KROK 10] Renderuję: ${item.name} | Ilość: ${qty} | Cena sztuki: ${price}`);
 
-                document.getElementById('finalNet').innerText = Math.floor(totalValue * 0.9).toLocaleString() + " ISK";
-                status.innerText = "● ESI Connection Success";
-                status.className = "text-[10px] font-mono text-green-500 uppercase font-bold";
+                table.innerHTML += `
+                    <tr class="hover:bg-white/5">
+                        <td class="px-4 py-3 flex items-center gap-3">
+                            <img src="https://images.evetech.net/types/${item.id}/icon?size=32" class="w-6 h-6 rounded">
+                            <span>${item.name}</span>
+                        </td>
+                        <td class="px-4 py-3 text-right text-yellow-600">${qty.toLocaleString()}</td>
+                        <td class="px-4 py-3 text-right text-gray-500">${Math.floor(price).toLocaleString()}</td>
+                        <td class="px-4 py-3 text-right font-bold text-white">${Math.floor(subtotal).toLocaleString()} ISK</td>
+                    </tr>`;
+            });
 
-            } catch (err) {
-                status.innerText = "● " + err.message;
-                status.className = "text-[10px] font-mono text-red-500 uppercase font-bold";
-                console.error(err);
-            }
+            const net = Math.floor(totalValue * 0.9);
+            finalNet.innerText = net.toLocaleString() + " ISK";
+            console.log(`[KROK 11] Sukces! Wartość netto wyliczona: ${net} ISK`);
+
+        } catch (err) {
+            console.error("[KRYTYCZNY BŁĄD]:", err);
+            table.innerHTML = `<tr><td colspan='4' class='p-10 text-center text-red-500 uppercase'>BŁĄD: ${err.message}</td></tr>`;
+        } finally {
+            btn.disabled = false;
+            btn.innerText = "Oblicz Wycenę";
+            console.log("=== KONIEC PROCESORA ===");
         }
-    </script>
-</body>
-</html>
-
+    }
+</script>
