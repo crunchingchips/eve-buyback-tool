@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <title>EVE Ultimate Buyback Tool (SDE + ESI)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-950 text-gray-200 min-h-screen p-6 font-sans">
+    <div class="max-w-6xl mx-auto">
+        <header class="border-b border-gray-800 pb-4 mb-8">
+            <h1 class="text-3xl font-black text-yellow-500 tracking-tighter uppercase">EVE Market Analyzer 2026</h1>
+            <div id="status" class="text-xs mt-2 text-blue-400 font-mono italic">Inicjalizacja systemów...</div>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div class="lg:col-span-2">
+                <textarea id="inventoryInput" 
+                    class="w-full h-[600px] bg-gray-900 border border-gray-800 p-4 font-mono text-sm text-green-500 focus:border-yellow-600 outline-none rounded-lg"
+                    placeholder="Wklej tutaj wszystko (Ctrl+A, Ctrl+C z gry)..."></textarea>
+            </div>
+
+            <div class="space-y-6">
+                <div class="bg-gray-900 p-6 rounded-xl border border-gray-800 shadow-2xl">
+                    <h2 class="text-gray-500 text-xs font-bold uppercase mb-4 tracking-widest">Wycena całkowita</h2>
+                    <div id="totalValue" class="text-4xl font-black text-white mb-2">0 <span class="text-sm text-gray-600">ISK</span></div>
+                    <div id="lineCount" class="text-xs text-gray-500">Przetworzono linii: 0</div>
+                    
+                    <button onclick="calculate()" id="calcBtn" disabled
+                        class="w-full mt-8 bg-yellow-600 hover:bg-yellow-500 disabled:bg-gray-800 text-black font-black py-4 rounded-md transition-all uppercase">
+                        Przelicz Inwentarz
+                    </button>
+                </div>
+
+                <div class="bg-gray-900 p-4 rounded-xl border border-gray-800">
+                    <h3 class="text-xs font-bold text-gray-500 uppercase mb-3">Szczegóły logistyki</h3>
+                    <div class="space-y-2 text-sm">
+                        <div class="flex justify-between"><span>Podatek:</span><span class="text-red-500">-10%</span></div>
+                        <div class="flex justify-between font-bold text-green-500 pt-2 border-t border-gray-800">
+                            <span>Netto:</span><span id="netValue">0 ISK</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let priceData = {};
+        let nameToIdMap = {};
+
+        async function bootstrap() {
+            const status = document.getElementById('status');
+            try {
+                // 1. Pobieramy ceny z ESI
+                status.innerText = "Pobieranie cen rynkowych z ESI...";
+                const priceRes = await fetch('https://esi.evetech.net/latest/markets/prices/');
+                const prices = await priceRes.json();
+                prices.forEach(p => priceData[p.type_id] = p.adjusted_price);
+
+                // 2. Pobieramy mapę nazw z zewnętrznego SDE (Static Data Export)
+                // Używamy publicznego serwera danych Fuzzwork (standard w EVE dev)
+                status.innerText = "Synchronizacja bazy przedmiotów SDE (30k+ rekordów)...";
+                const sdeRes = await fetch('https://market.fuzzwork.co.uk/api/typeids.json');
+                const sdeData = await sdeRes.json();
+                
+                // Odwracamy mapę: ID:Nazwa -> Nazwa:ID
+                for (let id in sdeData) {
+                    nameToIdMap[sdeData[id].name] = id;
+                }
+
+                status.innerText = "SYSTEM GOTOWY - Dane zsynchronizowane.";
+                status.className = "text-xs mt-2 text-green-500 font-mono italic";
+                document.getElementById('calcBtn').disabled = false;
+            } catch (err) {
+                status.innerText = "BŁĄD KRYTYCZNY: Brak połączenia z serwerami CCP.";
+                status.className = "text-xs mt-2 text-red-500 font-mono italic";
+            }
+        }
+
+        function calculate() {
+            const input = document.getElementById('inventoryInput').value;
+            const lines = input.split('\n');
+            let grandTotal = 0;
+            let count = 0;
+
+            lines.forEach(line => {
+                const cols = line.split('\t'); // EVE Tab format
+                if (cols.length >= 2) {
+                    const name = cols[0].trim();
+                    // Wyciągamy ostatnią kolumnę jako ilość i czyścimy znaki nie-numeryczne
+                    const qtyStr = cols[cols.length - 1].replace(/\D/g, '');
+                    const qty = parseInt(qtyStr) || 0;
+
+                    const typeId = nameToIdMap[name];
+                    if (typeId && priceData[typeId]) {
+                        grandTotal += priceData[typeId] * qty;
+                        count++;
+                    }
+                }
+            });
+
+            const net = grandTotal * 0.90;
+            document.getElementById('totalValue').innerHTML = `${Math.floor(grandTotal).toLocaleString()} <span class="text-sm text-gray-600">ISK</span>`;
+            document.getElementById('netValue').innerText = Math.floor(net).toLocaleString() + " ISK";
+            document.getElementById('lineCount').innerText = "Przetworzono linii: " + count;
+        }
+
+        bootstrap();
+    </script>
+</body>
+</html>
