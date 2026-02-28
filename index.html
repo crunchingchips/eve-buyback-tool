@@ -2,114 +2,102 @@
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
-    <title>EVE Buyback - Professional Object View</title>
+    <title>EVE Buyback Direct - Fix</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        .eve-bg { background-color: #050505; }
-        .item-row:hover { background-color: rgba(234, 179, 8, 0.05); }
-    </style>
 </head>
-<body class="eve-bg text-gray-200 min-h-screen font-sans p-6">
+<body class="bg-[#0a0a0a] text-gray-100 min-h-screen p-6 font-sans">
     <div class="max-w-6xl mx-auto">
-        <div class="flex justify-between items-end mb-8 border-b border-gray-800 pb-6">
-            <h1 class="text-4xl font-black text-yellow-500 tracking-tighter italic uppercase">Market <span class="text-white">Processor</span></h1>
-            <div id="status" class="text-[10px] font-mono text-green-500 uppercase">● ESI Connection Ready</div>
+        <div class="flex justify-between items-end border-b border-gray-800 pb-6 mb-8">
+            <h1 class="text-4xl font-black text-yellow-500 italic uppercase">Buyback <span class="text-white">Direct</span></h1>
+            <div id="status" class="text-[10px] text-green-500 font-mono tracking-widest">● ESI CONNECTION ACTIVE</div>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div class="lg:col-span-1 space-y-4">
-                <textarea id="inventoryInput" class="w-full h-80 bg-gray-900 border border-gray-800 p-4 font-mono text-[11px] text-green-400 rounded-lg outline-none focus:border-yellow-600 shadow-2xl" placeholder="Wklej inwentarz..."></textarea>
-                <button onclick="processInventory()" class="w-full bg-yellow-600 hover:bg-yellow-500 text-black font-black py-4 rounded-lg transition-all uppercase shadow-lg">
-                    Przetwórz Obiekty
-                </button>
-                <div class="p-4 bg-gray-900 rounded border border-gray-800">
+                <textarea id="invInput" class="w-full h-80 bg-gray-900 border border-gray-800 p-4 font-mono text-[11px] text-green-400 rounded-lg outline-none focus:border-yellow-600" placeholder="Wklej inwentarz..."></textarea>
+                <button onclick="runProcessor()" class="w-full bg-yellow-600 hover:bg-yellow-500 text-black font-black py-4 rounded-lg uppercase shadow-lg transition-all">Oblicz Wycenę</button>
+                <div class="p-6 bg-gray-900 rounded-xl border border-gray-800 shadow-2xl">
                     <div class="text-[10px] text-gray-500 uppercase font-bold mb-1">Suma Netto (-10%):</div>
-                    <div id="netDisplay" class="text-2xl font-black text-green-500">0 ISK</div>
+                    <div id="finalNet" class="text-3xl font-black text-green-500">0 ISK</div>
                 </div>
             </div>
 
-            <div class="lg:col-span-3">
+            <div class="lg:col-span-2">
                 <div class="bg-gray-900 rounded-xl border border-gray-800 overflow-hidden shadow-2xl">
-                    <table class="w-full text-left text-sm">
-                        <thead class="bg-black text-gray-500 uppercase text-[10px] font-bold tracking-widest">
+                    <table class="w-full text-left text-[12px]">
+                        <thead class="bg-black text-gray-500 uppercase text-[10px] font-bold">
                             <tr>
-                                <th class="px-4 py-3">Item</th>
-                                <th class="px-4 py-3 text-right">Quantity</th>
-                                <th class="px-4 py-3 text-right">Unit Price</th>
-                                <th class="px-4 py-3 text-right">Total</th>
+                                <th class="px-4 py-3">Przedmiot</th>
+                                <th class="px-4 py-3 text-right">Ilość</th>
+                                <th class="px-4 py-3 text-right">Wartość</th>
                             </tr>
                         </thead>
-                        <tbody id="resultsTable" class="divide-y divide-gray-800 font-mono text-[12px]">
+                        <tbody id="itemTable" class="divide-y divide-gray-800 font-mono">
                             </tbody>
                     </table>
-                    <div id="emptyState" class="p-20 text-center text-gray-600 italic">Wklej dane i uruchom procesor...</div>
                 </div>
             </div>
         </div>
     </div>
 
     <script>
-        async function processInventory() {
-            const input = document.getElementById('inventoryInput').value;
-            const lines = input.split('\n').filter(l => l.trim() !== "");
-            const tableBody = document.getElementById('resultsTable');
-            const emptyState = document.getElementById('emptyState');
-            
-            tableBody.innerHTML = "";
-            emptyState.style.display = "none";
+        async function runProcessor() {
+            const rawInput = document.getElementById('invInput').value;
+            const lines = rawInput.split('\n').filter(l => l.trim() !== "");
+            const table = document.getElementById('itemTable');
+            table.innerHTML = "";
 
-            const namesToQuery = lines.map(line => line.split('\t')[0].trim());
-
-            try {
-                // 1. ESI Universe: Nazwy -> ID
-                const idRes = await fetch('https://esi.evetech.net/latest/universe/ids/', {
-                    method: 'POST',
-                    body: JSON.stringify(namesToQuery)
-                });
-                const idData = await idRes.json();
-                const universeItems = idData.inventory || [];
-
-                // 2. ESI Markets: Pobierz Ceny
-                const priceRes = await fetch('https://esi.evetech.net/latest/markets/prices/');
-                const priceList = await priceRes.json();
-                const priceMap = {};
-                priceList.forEach(p => priceMap[p.type_id] = p.adjusted_price || 0);
-
-                let grandTotal = 0;
-
-                // 3. Budowanie Obiektów i Renderowanie Tabeli
-                lines.forEach(line => {
-                    const cols = line.split('\t');
+            // 1. Mapujemy inwentarz na czyste nazwy i ilości
+            const inventoryMap = {};
+            lines.forEach(line => {
+                const cols = line.split('\t');
+                if (cols.length >= 2) {
                     const name = cols[0].trim();
                     const qty = parseInt(cols[cols.length - 1].replace(/\s/g, '').replace(/\D/g, '')) || 0;
+                    inventoryMap[name] = (inventoryMap[name] || 0) + qty;
+                }
+            });
 
-                    const match = universeItems.find(i => i.name === name);
-                    
-                    if (match) {
-                        const price = priceMap[match.id] || 0;
-                        const subtotal = price * qty;
-                        grandTotal += subtotal;
+            const uniqueNames = Object.keys(inventoryMap);
 
-                        // Tworzenie wiersza tabeli (nasz widok obiektu)
-                        const row = `
-                            <tr class="item-row transition-colors">
-                                <td class="px-4 py-3 flex items-center gap-3 font-sans font-bold">
-                                    <img src="https://images.evetech.net/types/${match.id}/icon?size=32" class="w-8 h-8 rounded border border-gray-700 shadow-lg" alt="${name}">
-                                    ${name}
-                                </td>
-                                <td class="px-4 py-3 text-right text-yellow-500">${qty.toLocaleString()}</td>
-                                <td class="px-4 py-3 text-right text-gray-500">${Math.floor(price).toLocaleString()}</td>
-                                <td class="px-4 py-3 text-right font-bold">${Math.floor(subtotal).toLocaleString()} ISK</td>
-                            </tr>
-                        `;
-                        tableBody.innerHTML += row;
-                    }
+            try {
+                // 2. Pobieramy ID (POST Universe)
+                const idRes = await fetch('https://esi.evetech.net/latest/universe/ids/', {
+                    method: 'POST',
+                    body: JSON.stringify(uniqueNames)
+                });
+                const idData = await idRes.json();
+                const foundItems = idData.inventory || [];
+
+                // 3. Pobieramy Ceny (GET Markets)
+                const priceRes = await fetch('https://esi.evetech.net/latest/markets/prices/');
+                const priceData = await priceRes.json();
+                const prices = {};
+                priceData.forEach(p => prices[p.type_id] = p.adjusted_price || 0);
+
+                // 4. Budujemy tabelę i sumujemy
+                let totalValue = 0;
+                foundItems.forEach(item => {
+                    const qty = inventoryMap[item.name];
+                    const unitPrice = prices[item.id] || 0;
+                    const subtotal = unitPrice * qty;
+                    totalValue += subtotal;
+
+                    table.innerHTML += `
+                        <tr class="hover:bg-white/5 transition-colors">
+                            <td class="px-4 py-3 flex items-center gap-3">
+                                <img src="https://images.evetech.net/types/${item.id}/icon?size=32" class="w-6 h-6 rounded border border-gray-700">
+                                ${item.name}
+                            </td>
+                            <td class="px-4 py-3 text-right text-yellow-500">${qty.toLocaleString()}</td>
+                            <td class="px-4 py-3 text-right font-bold">${Math.floor(subtotal).toLocaleString()} ISK</td>
+                        </tr>`;
                 });
 
-                document.getElementById('netDisplay').innerText = Math.floor(grandTotal * 0.9).toLocaleString() + " ISK";
+                document.getElementById('finalNet').innerText = Math.floor(totalValue * 0.9).toLocaleString() + " ISK";
 
             } catch (err) {
-                console.error("Błąd procesowania:", err);
+                console.error("Błąd API:", err);
             }
         }
     </script>
