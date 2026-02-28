@@ -85,7 +85,7 @@
                 
                 if (!idRes.ok) throw new Error("Błąd ESI Universe: " + idRes.status);
                 const idData = await idRes.json();
-                const foundItems = idData.inventory || [];
+                const foundItems = idData.inventory_types || [];
 
                 // 3. Krok 2: GET Prices (Ceny rynkowe)
                 const priceRes = await fetch('https://esi.evetech.net/latest/markets/prices/');
@@ -128,3 +128,4 @@
     </script>
 </body>
 </html>
+
