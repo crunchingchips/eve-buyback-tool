@@ -1,121 +1,153 @@
-<script>
-    async function runProcessor() {
-        console.log("=== START PROCESORA ===");
-        
-        const btn = document.getElementById('calcBtn');
-        const table = document.getElementById('itemTable');
-        const finalNet = document.getElementById('finalNet');
-        const rawInput = document.getElementById('invInput').value.trim();
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <title>EVE Buyback Direct</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-[#050505] text-gray-200 min-h-screen p-8">
+    <div class="max-w-6xl mx-auto">
+        <h1 class="text-3xl font-black text-yellow-500 mb-8 uppercase italic">Buyback Processor</h1>
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+            <div class="lg:col-span-1 space-y-4">
+                <textarea id="invInput" class="w-full h-80 bg-gray-900 border border-gray-800 p-4 font-mono text-xs text-green-400 rounded-lg outline-none focus:border-yellow-600" placeholder="Wklej inwentarz..."></textarea>
+                <button id="calcBtn" onclick="runProcessor()" class="w-full bg-yellow-600 hover:bg-yellow-500 text-black font-black py-4 rounded-lg uppercase transition-all">Oblicz Wycenę</button>
+                <div class="p-6 bg-gray-900 rounded-xl border border-gray-800 shadow-2xl">
+                    <div class="text-[10px] text-gray-500 uppercase font-bold mb-1">Netto (-10%):</div>
+                    <div id="finalNet" class="text-2xl font-black text-green-500">0 ISK</div>
+                </div>
+            </div>
+            <div class="lg:col-span-3">
+                <div class="bg-gray-900 rounded-xl border border-gray-800 overflow-hidden shadow-2xl text-xs">
+                    <table class="w-full text-left">
+                        <thead class="bg-black text-gray-500 uppercase text-[10px] font-bold">
+                            <tr>
+                                <th class="px-4 py-3">Przedmiot</th>
+                                <th class="px-4 py-3 text-right">Ilość</th>
+                                <th class="px-4 py-3 text-right">Cena (Sztuka)</th>
+                                <th class="px-4 py-3 text-right">Suma</th>
+                            </tr>
+                        </thead>
+                        <tbody id="itemTable" class="divide-y divide-gray-800 font-mono text-gray-300">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
 
-        console.log("[KROK 1] Surowy tekst z pola (długość):", rawInput.length);
+    <script>
+        async function runProcessor() {
+            console.log("=== START PROCESORA ===");
+            const btn = document.getElementById('calcBtn');
+            const table = document.getElementById('itemTable');
+            const finalNet = document.getElementById('finalNet');
+            const rawInput = document.getElementById('invInput').value.trim();
 
-        if (!rawInput) {
-            console.log("[!] Puste pole, przerywam.");
-            return;
-        }
+            console.log("[KROK 1] Surowy tekst z pola (długość):", rawInput.length);
 
-        btn.disabled = true;
-        btn.innerText = "PRZETWARZANIE...";
-        table.innerHTML = "<tr><td colspan='4' class='p-10 text-center text-yellow-500'>Łączenie z ESI...</td></tr>";
-
-        try {
-            const lines = rawInput.split('\n').filter(l => l.trim() !== "");
-            console.log(`[KROK 2] Znaleziono linii tekstu: ${lines.length}`, lines);
-            
-            const inventoryMap = {};
-
-            // Parser
-            lines.forEach(line => {
-                let name = "";
-                let qty = 1;
-                if (line.includes('\t')) {
-                    const parts = line.split('\t');
-                    name = parts[0].trim();
-                    qty = parseInt(parts[1].replace(/\D/g, '')) || 1; 
-                } else {
-                    const match = line.trim().match(/^(.*?)\s+([\d\s]+)$/);
-                    if (match) {
-                        name = match[1].trim();
-                        qty = parseInt(match[2].replace(/\D/g, '')) || 1;
-                    } else {
-                        name = line.trim();
-                    }
-                }
-                if (name) inventoryMap[name] = (inventoryMap[name] || 0) + qty;
-            });
-
-            console.log("[KROK 3] Sparsowana mapa inwentarza (Przedmioty + Ilość):", inventoryMap);
-
-            const uniqueNames = Object.keys(inventoryMap);
-            console.log("[KROK 4] Czyste nazwy wysyłane do ESI (POST /universe/ids/):", uniqueNames);
-
-            // Pobieranie ID
-            console.log("[KROK 5] Oczekuję na odpowiedź ESI Universe...");
-            const idRes = await fetch('https://esi.evetech.net/latest/universe/ids/', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-                body: JSON.stringify(uniqueNames)
-            });
-            
-            if (!idRes.ok) throw new Error(`Błąd ESI (Universe): ${idRes.status}`);
-            const idData = await idRes.json();
-            
-            console.log("[KROK 6] Pełna odpowiedź z ESI (zobacz co jest w środku!):", idData);
-            
-            const foundItems = idData.inventory_types || [];
-            console.log(`[KROK 7] Rozpoznane przedmioty (inventory_types): ${foundItems.length}`, foundItems);
-
-            if (foundItems.length === 0) {
-                console.warn("[UWAGA] ESI nie zwróciło żadnych 'inventory_types'!");
-                throw new Error("ESI nie rozpoznało żadnej nazwy. Zły format tekstu.");
+            if (!rawInput) {
+                console.log("[!] Puste pole, przerywam.");
+                return;
             }
 
-            // Pobieranie Cen
-            console.log("[KROK 8] Pobieram cennik rynkowy...");
-            const priceRes = await fetch('https://esi.evetech.net/latest/markets/prices/');
-            if (!priceRes.ok) throw new Error(`Błąd ESI (Prices): ${priceRes.status}`);
-            const priceData = await priceRes.json();
-            
-            console.log(`[KROK 9] Pomyślnie pobrano cen dla ${priceData.length} przedmiotów z rynku.`);
-            
-            const prices = {};
-            priceData.forEach(p => prices[p.type_id] = p.adjusted_price || 0);
+            btn.disabled = true;
+            btn.innerText = "PRZETWARZANIE...";
+            table.innerHTML = "<tr><td colspan='4' class='p-10 text-center text-yellow-500'>Łączenie z ESI...</td></tr>";
 
-            // Generowanie Tabeli
-            table.innerHTML = "";
-            let totalValue = 0;
+            try {
+                const lines = rawInput.split('\n').filter(l => l.trim() !== "");
+                console.log(`[KROK 2] Znaleziono linii tekstu: ${lines.length}`, lines);
+                const inventoryMap = {};
 
-            foundItems.forEach(item => {
-                const qty = inventoryMap[item.name];
-                const price = prices[item.id] || 0;
-                const subtotal = price * qty;
-                totalValue += subtotal;
+                lines.forEach(line => {
+                    let name = "";
+                    let qty = 1;
+                    if (line.includes('\t')) {
+                        const parts = line.split('\t');
+                        name = parts[0].trim();
+                        qty = parseInt(parts[1].replace(/\D/g, '')) || 1; 
+                    } else {
+                        const match = line.trim().match(/^(.*?)\s+([\d\s]+)$/);
+                        if (match) {
+                            name = match[1].trim();
+                            qty = parseInt(match[2].replace(/\D/g, '')) || 1;
+                        } else {
+                            name = line.trim();
+                        }
+                    }
+                    if (name) inventoryMap[name] = (inventoryMap[name] || 0) + qty;
+                });
 
-                console.log(`[KROK 10] Renderuję: ${item.name} | Ilość: ${qty} | Cena sztuki: ${price}`);
+                console.log("[KROK 3] Sparsowana mapa inwentarza:", inventoryMap);
+                const uniqueNames = Object.keys(inventoryMap);
+                console.log("[KROK 4] Czyste nazwy wysyłane do ESI:", uniqueNames);
 
-                table.innerHTML += `
-                    <tr class="hover:bg-white/5">
-                        <td class="px-4 py-3 flex items-center gap-3">
-                            <img src="https://images.evetech.net/types/${item.id}/icon?size=32" class="w-6 h-6 rounded">
-                            <span>${item.name}</span>
-                        </td>
-                        <td class="px-4 py-3 text-right text-yellow-600">${qty.toLocaleString()}</td>
-                        <td class="px-4 py-3 text-right text-gray-500">${Math.floor(price).toLocaleString()}</td>
-                        <td class="px-4 py-3 text-right font-bold text-white">${Math.floor(subtotal).toLocaleString()} ISK</td>
-                    </tr>`;
-            });
+                console.log("[KROK 5] Oczekuję na odpowiedź ESI Universe...");
+                const idRes = await fetch('https://esi.evetech.net/latest/universe/ids/', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                    body: JSON.stringify(uniqueNames)
+                });
+                
+                if (!idRes.ok) throw new Error(`Błąd ESI (Universe): ${idRes.status}`);
+                const idData = await idRes.json();
+                console.log("[KROK 6] Pełna odpowiedź z ESI:", idData);
+                
+                // Dodane zabezpieczenie: szuka pod obydwoma kluczami
+                const foundItems = idData.inventory_types || idData.inventory || [];
+                console.log(`[KROK 7] Rozpoznane przedmioty: ${foundItems.length}`, foundItems);
 
-            const net = Math.floor(totalValue * 0.9);
-            finalNet.innerText = net.toLocaleString() + " ISK";
-            console.log(`[KROK 11] Sukces! Wartość netto wyliczona: ${net} ISK`);
+                if (foundItems.length === 0) {
+                    console.warn("[UWAGA] ESI nie zwróciło żadnych danych dla tych nazw!");
+                    throw new Error("ESI nie rozpoznało żadnej nazwy. Zły format tekstu.");
+                }
 
-        } catch (err) {
-            console.error("[KRYTYCZNY BŁĄD]:", err);
-            table.innerHTML = `<tr><td colspan='4' class='p-10 text-center text-red-500 uppercase'>BŁĄD: ${err.message}</td></tr>`;
-        } finally {
-            btn.disabled = false;
-            btn.innerText = "Oblicz Wycenę";
-            console.log("=== KONIEC PROCESORA ===");
+                console.log("[KROK 8] Pobieram cennik rynkowy...");
+                const priceRes = await fetch('https://esi.evetech.net/latest/markets/prices/');
+                if (!priceRes.ok) throw new Error(`Błąd ESI (Prices): ${priceRes.status}`);
+                const priceData = await priceRes.json();
+                console.log(`[KROK 9] Pomyślnie pobrano cen dla ${priceData.length} przedmiotów z rynku.`);
+                
+                const prices = {};
+                priceData.forEach(p => prices[p.type_id] = p.adjusted_price || 0);
+
+                table.innerHTML = "";
+                let totalValue = 0;
+
+                foundItems.forEach(item => {
+                    const qty = inventoryMap[item.name];
+                    const price = prices[item.id] || 0;
+                    const subtotal = price * qty;
+                    totalValue += subtotal;
+
+                    console.log(`[KROK 10] Renderuję: ${item.name} | Ilość: ${qty} | Cena sztuki: ${price}`);
+
+                    table.innerHTML += `
+                        <tr class="hover:bg-white/5">
+                            <td class="px-4 py-3 flex items-center gap-3">
+                                <img src="https://images.evetech.net/types/${item.id}/icon?size=32" class="w-6 h-6 rounded">
+                                <span>${item.name}</span>
+                            </td>
+                            <td class="px-4 py-3 text-right text-yellow-600">${qty.toLocaleString()}</td>
+                            <td class="px-4 py-3 text-right text-gray-500">${Math.floor(price).toLocaleString()}</td>
+                            <td class="px-4 py-3 text-right font-bold text-white">${Math.floor(subtotal).toLocaleString()} ISK</td>
+                        </tr>`;
+                });
+
+                const net = Math.floor(totalValue * 0.9);
+                finalNet.innerText = net.toLocaleString() + " ISK";
+                console.log(`[KROK 11] Sukces! Wartość netto wyliczona: ${net} ISK`);
+
+            } catch (err) {
+                console.error("[KRYTYCZNY BŁĄD]:", err);
+                table.innerHTML = `<tr><td colspan='4' class='p-10 text-center text-red-500 uppercase'>BŁĄD: ${err.message}</td></tr>`;
+            } finally {
+                btn.disabled = false;
+                btn.innerText = "Oblicz Wycenę";
+                console.log("=== KONIEC PROCESORA ===");
+            }
         }
-    }
-</script>
+    </script>
+</body>
+</html>
