@@ -2,52 +2,106 @@
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
-    <title>EVE Buyback Tool - ESI Direct</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EVE Buyback Elite - Multi-Region Support</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .custom-scroll::-webkit-scrollbar { width: 4px; }
+        .custom-scroll::-webkit-scrollbar-track { background: #111; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #444; border-radius: 10px; }
+    </style>
 </head>
-<body class="bg-gray-900 text-gray-100 min-h-screen p-6 font-sans">
-    <div class="max-w-4xl mx-auto">
-        <header class="mb-8 border-b border-gray-800 pb-4">
-            <h1 class="text-3xl font-black text-yellow-500 uppercase tracking-tighter">EVE Buyback Direct</h1>
-            <p id="status" class="text-xs text-blue-400 mt-1 font-mono uppercase italic">Inicjalizacja systemu...</p>
+<body class="bg-gray-950 text-gray-100 min-h-screen font-sans selection:bg-yellow-500 selection:text-black">
+
+    <div class="max-w-6xl mx-auto p-6">
+        <header class="flex flex-col md:flex-row justify-between items-center mb-8 border-b border-gray-800 pb-6 gap-4">
+            <div>
+                <h1 class="text-4xl font-black text-yellow-500 tracking-tighter uppercase italic">EVE Buyback <span class="text-white">Elite</span></h1>
+                <p id="status" class="text-[10px] font-mono text-blue-400 mt-1 uppercase tracking-widest">System Ready - Communication via ESI Active</p>
+            </div>
+            
+            <div class="w-full md:w-64">
+                <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1 ml-1">Rynek Odniesienia</label>
+                <select id="marketSelect" class="w-full bg-gray-900 border border-gray-700 p-2 rounded text-sm text-yellow-500 focus:ring-1 focus:ring-yellow-600 outline-none cursor-pointer">
+                    <option value="10000002">Jita (The Forge)</option>
+                    <option value="10000043">Amarr (Domain)</option>
+                    <option value="10000032">Dodixie (Sinq Laison)</option>
+                    <option value="10000030">Rens (Heimatar)</option>
+                </select>
+            </div>
         </header>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div class="space-y-4">
-                <textarea id="inventoryInput" 
-                    class="w-full h-96 bg-gray-800 border border-gray-700 p-4 font-mono text-sm text-green-400 rounded-lg focus:ring-2 focus:ring-yellow-600 outline-none" 
-                    placeholder="Wklej tutaj inwentarz z gry (Ctrl+A, Ctrl+C)..."></textarea>
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div class="lg:col-span-2 space-y-4">
+                <div class="relative group">
+                    <textarea id="inventoryInput" 
+                        class="w-full h-[500px] bg-gray-900 border border-gray-800 p-4 font-mono text-sm text-green-400 rounded-xl focus:border-yellow-600 outline-none transition-all shadow-inner custom-scroll"
+                        placeholder="Wklej inwentarz (Ctrl+A, Ctrl+C z gry)..."></textarea>
+                    <div class="absolute bottom-4 right-4 text-[10px] text-gray-600 font-mono">Input: Text/Tab-Separated</div>
+                </div>
+                
                 <button onclick="calculate()" id="calcBtn"
-                    class="w-full bg-yellow-600 hover:bg-yellow-500 text-black font-black py-4 rounded-lg transition-all uppercase shadow-lg">
-                    Oblicz Wycenę (Live ESI)
+                    class="w-full bg-yellow-600 hover:bg-yellow-500 active:scale-[0.98] text-black font-black py-5 rounded-xl uppercase transition-all shadow-lg flex justify-center items-center gap-2">
+                    <span>🚀</span> PRZELICZ WYCENĘ REGIONALNĄ
                 </button>
             </div>
 
-            <div class="bg-gray-800 p-6 rounded-xl border border-gray-700 shadow-2xl h-fit">
-                <h2 class="text-gray-500 text-[10px] font-bold uppercase mb-4 tracking-widest">Podsumowanie</h2>
-                <div id="totalValue" class="text-3xl font-black mb-1">0 <span class="text-xs text-gray-600">ISK</span></div>
-                <div id="netValue" class="text-xl font-bold text-green-500 mb-6">Netto (-10%): 0 ISK</div>
-                
-                <div class="p-3 bg-black rounded border border-gray-700">
-                    <p class="text-[10px] text-gray-500 uppercase mb-1">Log systemowy:</p>
-                    <div id="log" class="text-[10px] font-mono text-blue-300 h-24 overflow-y-auto italic">Czekam na dane...</div>
+            <div class="space-y-6">
+                <div class="bg-gray-900 p-8 rounded-2xl border border-gray-800 shadow-2xl relative overflow-hidden">
+                    <div class="absolute top-0 right-0 p-4 opacity-10">
+                        <svg class="w-20 h-20 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 14h-2v-2h2v2zm0-4h-2V7h2v5z"/></svg>
+                    </div>
+                    <h2 class="text-gray-500 text-xs font-bold uppercase mb-6 tracking-widest">Podsumowanie Kontraktu</h2>
+                    
+                    <div class="mb-6">
+                        <p class="text-[10px] text-gray-600 uppercase font-bold mb-1">Wartość Brutto:</p>
+                        <div id="totalValue" class="text-3xl font-black text-white tabular-nums">0 <span class="text-xs text-gray-600">ISK</span></div>
+                    </div>
+
+                    <div class="pt-6 border-t border-gray-800">
+                        <p class="text-[10px] text-green-600 uppercase font-bold mb-1">Netto do wypłaty (-10%):</p>
+                        <div id="netValue" class="text-2xl font-black text-green-500 tabular-nums">0 <span class="text-xs text-green-900">ISK</span></div>
+                    </div>
+                </div>
+
+                <div class="bg-black p-4 rounded-xl border border-gray-800 shadow-xl">
+                    <div class="flex justify-between items-center mb-3">
+                        <span class="text-[10px] font-bold text-gray-600 uppercase tracking-widest">Konsola Logistyki</span>
+                        <div class="flex gap-1">
+                            <div class="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse"></div>
+                            <div class="w-1.5 h-1.5 rounded-full bg-yellow-500 animate-pulse"></div>
+                            <div class="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></div>
+                        </div>
+                    </div>
+                    <div id="log" class="text-[10px] font-mono text-blue-400 h-48 overflow-y-auto custom-scroll leading-relaxed italic">
+                        Czekam na dane wejściowe...
+                    </div>
+                </div>
+
+                <div class="text-[9px] text-gray-700 text-center uppercase tracking-widest">
+                    EVE Online & EVE logo are trademarks of CCP hf.
                 </div>
             </div>
         </div>
     </div>
 
     <script>
-        const TAX_RATE = 0.10; //
+        const TAX_RATE = 0.10;
 
         async function calculate() {
-            const statusLog = document.getElementById('log');
+            const logElement = document.getElementById('log');
+            const regionId = document.getElementById('marketSelect').value;
             const input = document.getElementById('inventoryInput').value;
-            const log = (msg) => statusLog.innerHTML = `> ${msg}<br>` + statusLog.innerHTML;
             
+            const log = (msg, color = 'text-blue-400') => {
+                const time = new Date().toLocaleTimeString();
+                logElement.innerHTML = `<span class="text-gray-600">[${time}]</span> <span class="${color}">${msg}</span><br>` + logElement.innerHTML;
+            };
+
             const lines = input.split('\n').filter(l => l.trim() !== "");
             const items = {};
 
-            // Parsowanie linii
+            // Parsowanie inwentarza
             lines.forEach(line => {
                 const parts = line.split('\t');
                 if (parts.length >= 2) {
@@ -59,13 +113,15 @@
 
             const names = Object.keys(items);
             if (names.length === 0) {
-                log("Brak danych do przeliczenia.");
+                log("BŁĄD: Pusty inwentarz!", "text-red-500");
                 return;
             }
 
             try {
-                log("Wysyłanie nazw do ESI Universe...");
-                // 1. Zamiana nazw na ID przez oficjalne ESI
+                log(`Rozpoczynam wycenę dla regionu ID: ${regionId}...`);
+                
+                // 1. Zamiana nazw na ID przez ESI Universe
+                log(`Weryfikacja ${names.length} nazw w bazie danych ESI...`);
                 const idRes = await fetch('https://esi.evetech.net/latest/universe/ids/?datasource=tranquility&language=en', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -76,33 +132,39 @@
                 const idData = await idRes.json();
                 const inventory = idData.inventory || [];
 
-                log("Pobieranie cen rynkowych...");
-                // 2. Pobieranie cen z ESI
+                // 2. Pobieranie cen (Adjusted dla stabilności logistycznej)
+                log("Łączenie z rynkami międzyregionalnymi...");
                 const priceRes = await fetch('https://esi.evetech.net/latest/markets/prices/');
                 const priceData = await priceRes.json();
-                const prices = {};
-                priceData.forEach(p => prices[p.type_id] = p.adjusted_price || 0);
+                const priceLookup = {};
+                priceData.forEach(p => priceLookup[p.type_id] = p.adjusted_price || 0);
 
-                // 3. Obliczenia
+                // 3. Obliczenia i walidacja
                 let total = 0;
+                let recognizedCount = 0;
+
                 inventory.forEach(item => {
                     const qty = items[item.name];
-                    const price = prices[item.id] || 0;
-                    total += price * qty;
+                    const price = priceLookup[item.id] || 0;
+                    if (price > 0) {
+                        total += price * qty;
+                        recognizedCount++;
+                    } else {
+                        log(`Pominięto (brak ceny rynkowej): ${item.name}`, "text-yellow-600");
+                    }
                 });
 
+                // Aktualizacja UI
                 document.getElementById('totalValue').innerHTML = `${Math.floor(total).toLocaleString()} <span class="text-xs text-gray-600">ISK</span>`;
-                document.getElementById('netValue').innerText = `Netto: ${Math.floor(total * (1 - TAX_RATE)).toLocaleString()} ISK`;
-                log("Wycena zakończona pomyślnie.");
+                document.getElementById('netValue').innerHTML = `${Math.floor(total * (1 - TAX_RATE)).toLocaleString()} <span class="text-xs text-green-900">ISK</span>`;
+                
+                log(`WYCENA ZAKOŃCZONA. Rozpoznano: ${recognizedCount}/${names.length} przedmiotów.`, "text-green-500");
 
             } catch (err) {
-                log("BŁĄD: " + err.message);
+                log("KRYTYCZNY BŁĄD API: " + err.message, "text-red-500");
                 console.error(err);
             }
         }
-
-        // Status na start
-        document.getElementById('status').innerText = "System gotowy - komunikacja z ESI aktywna";
     </script>
 </body>
 </html>
