@@ -2,62 +2,109 @@
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
-    <title>EVE Buyback Direct</title>
+    <title>EVE Buyback Direct - Pro Analytics</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .custom-scroll::-webkit-scrollbar { width: 6px; }
+        .custom-scroll::-webkit-scrollbar-track { background: #111; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
+        .custom-scroll::-webkit-scrollbar-thumb:hover { background: #555; }
+    </style>
 </head>
-<body class="bg-[#050505] text-gray-200 min-h-screen p-8">
-    <div class="max-w-6xl mx-auto">
-        <h1 class="text-3xl font-black text-yellow-500 mb-8 uppercase italic">Buyback Processor</h1>
-        <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
-            <div class="lg:col-span-1 space-y-4">
-                <textarea id="invInput" class="w-full h-80 bg-gray-900 border border-gray-800 p-4 font-mono text-xs text-green-400 rounded-lg outline-none focus:border-yellow-600" placeholder="Wklej inwentarz..."></textarea>
-                <button id="calcBtn" onclick="runProcessor()" class="w-full bg-yellow-600 hover:bg-yellow-500 text-black font-black py-4 rounded-lg uppercase transition-all">Oblicz Wycenę</button>
-                <div class="p-6 bg-gray-900 rounded-xl border border-gray-800 shadow-2xl">
-                    <div class="text-[10px] text-gray-500 uppercase font-bold mb-1">Netto (-10%):</div>
+<body class="bg-[#050505] text-gray-200 min-h-screen p-8 font-sans">
+    <div class="max-w-7xl mx-auto">
+        <h1 class="text-3xl font-black text-yellow-500 mb-8 uppercase italic tracking-wider">Buyback <span class="text-white">Analytics</span></h1>
+        
+        <div class="grid grid-cols-1 xl:grid-cols-4 gap-8">
+            <div class="xl:col-span-1 space-y-6">
+                <div>
+                    <textarea id="invInput" class="w-full h-64 bg-gray-900 border border-gray-800 p-4 font-mono text-[11px] text-green-400 rounded-lg outline-none focus:border-yellow-600 custom-scroll" placeholder="Wklej inwentarz..."></textarea>
+                    <button id="calcBtn" onclick="runProcessor()" class="w-full mt-2 bg-yellow-600 hover:bg-yellow-500 text-black font-black py-4 rounded-lg uppercase transition-all shadow-lg active:scale-95">Oblicz Wycenę</button>
+                </div>
+                
+                <div class="p-6 bg-gray-900 rounded-xl border border-gray-800 shadow-xl">
+                    <div class="text-[10px] text-gray-500 uppercase font-bold mb-1 tracking-widest">Suma Netto (-10%):</div>
                     <div id="finalNet" class="text-2xl font-black text-green-500">0 ISK</div>
                 </div>
-            </div>
-            <div class="lg:col-span-3">
-                <div class="bg-gray-900 rounded-xl border border-gray-800 overflow-hidden shadow-2xl text-xs">
-                    <table class="w-full text-left">
-                        <thead class="bg-black text-gray-500 uppercase text-[10px] font-bold">
-                            <tr>
-                                <th class="px-4 py-3">Przedmiot</th>
-                                <th class="px-4 py-3 text-right">Ilość</th>
-                                <th class="px-4 py-3 text-right">Cena (Sztuka)</th>
-                                <th class="px-4 py-3 text-right">Suma</th>
-                            </tr>
-                        </thead>
-                        <tbody id="itemTable" class="divide-y divide-gray-800 font-mono text-gray-300">
-                        </tbody>
-                    </table>
+
+                <div class="p-4 bg-gray-900 rounded-xl border border-gray-800 shadow-xl hidden" id="chartContainer">
+                    <div class="text-[10px] text-gray-500 uppercase font-bold mb-4 tracking-widest text-center">Struktura Wartości</div>
+                    <canvas id="valueChart" width="200" height="200"></canvas>
                 </div>
+            </div>
+
+            <div class="xl:col-span-3 space-y-8">
+                
+                <div class="bg-gray-900 rounded-xl border border-gray-800 overflow-hidden shadow-xl text-xs">
+                    <div class="bg-black/50 p-3 border-b border-gray-800 flex justify-between items-center">
+                        <span class="text-yellow-500 font-bold uppercase tracking-widest text-[10px]">Przedmioty Wycenione (Rynek)</span>
+                        <span id="valuedCount" class="text-gray-500 font-mono">0 itemów</span>
+                    </div>
+                    <div class="max-h-[400px] overflow-y-auto custom-scroll">
+                        <table class="w-full text-left">
+                            <thead class="bg-gray-900 sticky top-0 text-gray-500 uppercase text-[10px] font-bold shadow-md">
+                                <tr>
+                                    <th class="px-4 py-3">Przedmiot</th>
+                                    <th class="px-4 py-3 text-right">Ilość</th>
+                                    <th class="px-4 py-3 text-right">Cena (Sztuka)</th>
+                                    <th class="px-4 py-3 text-right">Suma</th>
+                                </tr>
+                            </thead>
+                            <tbody id="validTable" class="divide-y divide-gray-800 font-mono text-gray-300">
+                                <tr><td colspan="4" class="p-8 text-center text-gray-600 italic">Oczekuję na dane...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="bg-[#1a0f0f] rounded-xl border border-red-900/30 overflow-hidden shadow-xl text-xs">
+                    <div class="bg-black/50 p-3 border-b border-red-900/30 flex justify-between items-center">
+                        <span class="text-red-400 font-bold uppercase tracking-widest text-[10px]">Wycena Manualna (Rzadkie / Limitowane / Brak Danych)</span>
+                        <span id="zeroCount" class="text-gray-500 font-mono">0 itemów</span>
+                    </div>
+                    <div class="max-h-[250px] overflow-y-auto custom-scroll">
+                        <table class="w-full text-left">
+                            <thead class="bg-[#1a0f0f] sticky top-0 text-red-500/50 uppercase text-[10px] font-bold shadow-md">
+                                <tr>
+                                    <th class="px-4 py-3">Przedmiot</th>
+                                    <th class="px-4 py-3 text-right">Ilość</th>
+                                    <th class="px-4 py-3 text-right">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="zeroTable" class="divide-y divide-red-900/20 font-mono text-gray-400">
+                                <tr><td colspan="3" class="p-4 text-center text-red-900/50 italic">Czysto</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
             </div>
         </div>
     </div>
 
     <script>
+        let myChart = null; // Zmienna globalna dla wykresu
+        Chart.defaults.color = '#6b7280'; // Kolor czcionek wykresu
+        Chart.defaults.font.family = 'monospace';
+
         async function runProcessor() {
-            console.log("=== START PROCESORA ===");
             const btn = document.getElementById('calcBtn');
-            const table = document.getElementById('itemTable');
+            const validTable = document.getElementById('validTable');
+            const zeroTable = document.getElementById('zeroTable');
             const finalNet = document.getElementById('finalNet');
+            const chartContainer = document.getElementById('chartContainer');
             const rawInput = document.getElementById('invInput').value.trim();
 
-            console.log("[KROK 1] Surowy tekst z pola (długość):", rawInput.length);
-
-            if (!rawInput) {
-                console.log("[!] Puste pole, przerywam.");
-                return;
-            }
+            if (!rawInput) return;
 
             btn.disabled = true;
             btn.innerText = "PRZETWARZANIE...";
-            table.innerHTML = "<tr><td colspan='4' class='p-10 text-center text-yellow-500'>Łączenie z ESI...</td></tr>";
+            validTable.innerHTML = "<tr><td colspan='4' class='p-10 text-center text-yellow-500 animate-pulse'>Pobieranie danych z ESI...</td></tr>";
+            zeroTable.innerHTML = "";
 
             try {
                 const lines = rawInput.split('\n').filter(l => l.trim() !== "");
-                console.log(`[KROK 2] Znaleziono linii tekstu: ${lines.length}`, lines);
                 const inventoryMap = {};
 
                 lines.forEach(line => {
@@ -79,74 +126,159 @@
                     if (name) inventoryMap[name] = (inventoryMap[name] || 0) + qty;
                 });
 
-                console.log("[KROK 3] Sparsowana mapa inwentarza:", inventoryMap);
                 const uniqueNames = Object.keys(inventoryMap);
-                console.log("[KROK 4] Czyste nazwy wysyłane do ESI:", uniqueNames);
 
-                console.log("[KROK 5] Oczekuję na odpowiedź ESI Universe...");
+                // Pobieranie ID
                 const idRes = await fetch('https://esi.evetech.net/latest/universe/ids/', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
                     body: JSON.stringify(uniqueNames)
                 });
-                
-                if (!idRes.ok) throw new Error(`Błąd ESI (Universe): ${idRes.status}`);
+                if (!idRes.ok) throw new Error("Błąd ESI (Universe)");
                 const idData = await idRes.json();
-                console.log("[KROK 6] Pełna odpowiedź z ESI:", idData);
                 
-                // Dodane zabezpieczenie: szuka pod obydwoma kluczami
                 const foundItems = idData.inventory_types || idData.inventory || [];
-                console.log(`[KROK 7] Rozpoznane przedmioty: ${foundItems.length}`, foundItems);
+                if (foundItems.length === 0) throw new Error("ESI nie rozpoznało nazw.");
 
-                if (foundItems.length === 0) {
-                    console.warn("[UWAGA] ESI nie zwróciło żadnych danych dla tych nazw!");
-                    throw new Error("ESI nie rozpoznało żadnej nazwy. Zły format tekstu.");
-                }
-
-                console.log("[KROK 8] Pobieram cennik rynkowy...");
+                // Pobieranie Cen
                 const priceRes = await fetch('https://esi.evetech.net/latest/markets/prices/');
-                if (!priceRes.ok) throw new Error(`Błąd ESI (Prices): ${priceRes.status}`);
+                if (!priceRes.ok) throw new Error("Błąd ESI (Prices)");
                 const priceData = await priceRes.json();
-                console.log(`[KROK 9] Pomyślnie pobrano cen dla ${priceData.length} przedmiotów z rynku.`);
                 
                 const prices = {};
                 priceData.forEach(p => prices[p.type_id] = p.adjusted_price || 0);
 
-                table.innerHTML = "";
+                validTable.innerHTML = "";
+                zeroTable.innerHTML = "";
                 let totalValue = 0;
+                
+                let validItemsCount = 0;
+                let zeroItemsCount = 0;
+                
+                // Dane do wykresu
+                let chartData = [];
+
+                // Fallback dla zepsutych obrazków (skrzynia cargo ID 23)
+                const fallbackImg = "onerror=\"this.onerror=null; this.src='https://images.evetech.net/types/23/icon?size=32';\"";
 
                 foundItems.forEach(item => {
                     const qty = inventoryMap[item.name];
                     const price = prices[item.id] || 0;
                     const subtotal = price * qty;
-                    totalValue += subtotal;
 
-                    console.log(`[KROK 10] Renderuję: ${item.name} | Ilość: ${qty} | Cena sztuki: ${price}`);
+                    if (price > 0) {
+                        totalValue += subtotal;
+                        validItemsCount++;
+                        chartData.push({ name: item.name, value: subtotal });
 
-                    table.innerHTML += `
-                        <tr class="hover:bg-white/5">
-                            <td class="px-4 py-3 flex items-center gap-3">
-                                <img src="https://images.evetech.net/types/${item.id}/icon?size=32" class="w-6 h-6 rounded">
-                                <span>${item.name}</span>
-                            </td>
-                            <td class="px-4 py-3 text-right text-yellow-600">${qty.toLocaleString()}</td>
-                            <td class="px-4 py-3 text-right text-gray-500">${Math.floor(price).toLocaleString()}</td>
-                            <td class="px-4 py-3 text-right font-bold text-white">${Math.floor(subtotal).toLocaleString()} ISK</td>
-                        </tr>`;
+                        validTable.innerHTML += `
+                            <tr class="hover:bg-white/5 border-b border-gray-800/50">
+                                <td class="px-4 py-2 flex items-center gap-3">
+                                    <img src="https://images.evetech.net/types/${item.id}/icon?size=32" class="w-6 h-6 rounded" ${fallbackImg}>
+                                    <span class="text-gray-300">${item.name}</span>
+                                </td>
+                                <td class="px-4 py-2 text-right text-yellow-600">${qty.toLocaleString()}</td>
+                                <td class="px-4 py-2 text-right text-gray-500">${Math.floor(price).toLocaleString()}</td>
+                                <td class="px-4 py-2 text-right font-bold text-white">${Math.floor(subtotal).toLocaleString()} ISK</td>
+                            </tr>`;
+                    } else {
+                        zeroItemsCount++;
+                        zeroTable.innerHTML += `
+                            <tr class="hover:bg-red-900/20 border-b border-red-900/20">
+                                <td class="px-4 py-2 flex items-center gap-3">
+                                    <img src="https://images.evetech.net/types/${item.id}/icon?size=32" class="w-6 h-6 rounded opacity-50" ${fallbackImg}>
+                                    <span class="text-red-300">${item.name}</span>
+                                </td>
+                                <td class="px-4 py-2 text-right text-yellow-600/50">${qty.toLocaleString()}</td>
+                                <td class="px-4 py-2 text-right text-red-500 text-[10px] uppercase">Wycena Manualna</td>
+                            </tr>`;
+                    }
                 });
 
-                const net = Math.floor(totalValue * 0.9);
-                finalNet.innerText = net.toLocaleString() + " ISK";
-                console.log(`[KROK 11] Sukces! Wartość netto wyliczona: ${net} ISK`);
+                if(validItemsCount === 0) validTable.innerHTML = "<tr><td colspan='4' class='p-4 text-center'>Brak rynkowych przedmiotów</td></tr>";
+                if(zeroItemsCount === 0) zeroTable.innerHTML = "<tr><td colspan='3' class='p-4 text-center text-green-900'>Brak przedmiotów do wyceny ręcznej!</td></tr>";
+
+                document.getElementById('valuedCount').innerText = `${validItemsCount} itemów`;
+                document.getElementById('zeroCount').innerText = `${zeroItemsCount} itemów`;
+
+                finalNet.innerText = Math.floor(totalValue * 0.9).toLocaleString() + " ISK";
+
+                // RENDEROWANIE WYKRESU
+                renderChart(chartData);
 
             } catch (err) {
-                console.error("[KRYTYCZNY BŁĄD]:", err);
-                table.innerHTML = `<tr><td colspan='4' class='p-10 text-center text-red-500 uppercase'>BŁĄD: ${err.message}</td></tr>`;
+                validTable.innerHTML = `<tr><td colspan='4' class='p-10 text-center text-red-500'>BŁĄD: ${err.message}</td></tr>`;
             } finally {
                 btn.disabled = false;
                 btn.innerText = "Oblicz Wycenę";
-                console.log("=== KONIEC PROCESORA ===");
             }
+        }
+
+        function renderChart(data) {
+            const ctx = document.getElementById('valueChart').getContext('2d');
+            document.getElementById('chartContainer').classList.remove('hidden');
+
+            // Sortowanie od najdroższych
+            data.sort((a, b) => b.value - a.value);
+
+            // Bierzemy top 5 najdroższych itemów, resztę wrzucamy do "Inne"
+            let labels = [];
+            let values = [];
+            let otherValue = 0;
+
+            for (let i = 0; i < data.length; i++) {
+                if (i < 5) {
+                    labels.push(data[i].name);
+                    values.push(data[i].value);
+                } else {
+                    otherValue += data[i].value;
+                }
+            }
+
+            if (otherValue > 0) {
+                labels.push("Pozostałe minerały/itemy");
+                values.push(otherValue);
+            }
+
+            // Jeśli stary wykres istnieje, niszczymy go przed narysowaniem nowego
+            if (myChart) {
+                myChart.destroy();
+            }
+
+            myChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: values,
+                        backgroundColor: [
+                            '#ca8a04', // yellow-600
+                            '#eab308', // yellow-500
+                            '#854d0e', // yellow-800
+                            '#374151', // gray-700
+                            '#4b5563', // gray-600
+                            '#1f2937'  // gray-800 (Inne)
+                        ],
+                        borderWidth: 1,
+                        borderColor: '#111'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { position: 'bottom', labels: { boxWidth: 10, font: {size: 10} } },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let val = context.raw;
+                                    return " " + Math.floor(val).toLocaleString() + " ISK";
+                                }
+                            }
+                        }
+                    },
+                    cutout: '70%' // Grubość pierścienia
+                }
+            });
         }
     </script>
 </body>
