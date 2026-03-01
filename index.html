@@ -97,7 +97,7 @@
                     </div>
                 </div>
 
-                <div class="bg-[#1a1515] rounded-xl border border-orange-800/40 overflow-hidden panel-glow flex flex-col h-[200px]">
+                <div class="bg-[#1a1515] rounded-xl border border-orange-800/40 overflow-hidden panel-glow flex flex-col h-[260px]">
                     <div class="bg-[#201818] p-3 px-5 border-b border-orange-800/50 flex justify-between items-center z-10">
                         <span class="text-orange-400 font-bold uppercase tracking-widest text-[11px]">Poza rynkiem / Limitowane</span>
                         <span id="zeroCount" class="text-orange-200 font-mono text-[11px] bg-orange-900/50 px-2 py-1 rounded border border-orange-800/50">0 poz.</span>
@@ -123,10 +123,9 @@
 
     <script>
         let myChart = null;
-        let globalReportText = ""; // Zmienna do przechowywania tekstu dla schowka
+        let globalReportText = ""; 
 
-        // Konfiguracja domyślna wykresu
-        Chart.defaults.color = '#71717a'; // Kolor czcionek legendy
+        Chart.defaults.color = '#71717a'; 
         Chart.defaults.font.family = "'JetBrains Mono', monospace";
 
         async function runProcessor() {
@@ -145,7 +144,6 @@
 
             if (!rawInput) return;
 
-            // Blokady na czas ładowania
             btn.disabled = true;
             copyBtn.classList.add('hidden');
             btn.innerHTML = "<span class='animate-pulse'>Pobieranie Danych ESI...</span>";
@@ -153,7 +151,6 @@
             zeroTable.innerHTML = "";
 
             try {
-                // Parser
                 const lines = rawInput.split('\n').filter(l => l.trim() !== "");
                 const inventoryMap = {};
 
@@ -178,7 +175,6 @@
 
                 const uniqueNames = Object.keys(inventoryMap);
 
-                // ID z ESI
                 const idRes = await fetch('https://esi.evetech.net/latest/universe/ids/', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
@@ -190,7 +186,6 @@
                 const foundItems = idData.inventory_types || idData.inventory || [];
                 if (foundItems.length === 0) throw new Error("ESI nie rozpoznało żadnej nazwy.");
 
-                // Ceny z ESI
                 const prices = {};
 
                 if (regionId === 'global') {
@@ -216,7 +211,6 @@
                     priceResults.forEach(p => prices[p.id] = p.price);
                 }
 
-                // Generowanie Tabel
                 validTable.innerHTML = "";
                 let totalValue = 0;
                 let validItemsCount = 0;
@@ -264,7 +258,6 @@
                 document.getElementById('valuedCount').innerText = `${validItemsCount} poz.`;
                 document.getElementById('zeroCount').innerText = `${zeroItemsCount} poz.`;
 
-                // Obliczanie finałowej kwoty
                 const multiplier = 1 - (taxRate / 100);
                 const finalISK = Math.floor(totalValue * multiplier);
                 
@@ -276,17 +269,13 @@
                 
                 finalNet.innerHTML = `${finalISK.toLocaleString()} <span class="text-sm text-green-500">ISK</span>`;
 
-                // Generowanie i Rysowanie Wykresu
                 renderChart(chartData);
 
-                // Przygotowanie tekstu do schowka
                 if (validItemsCount > 0) {
-                    // Sortujemy od najdroższych do najtańszych
                     chartData.sort((a, b) => b.value - a.value);
-                    // Bierzemy 3 najdroższe przedmioty
                     const topItems = chartData.slice(0, 3).map(item => item.name).join(', ');
                     globalReportText = `🧾 Wycena Loots: ${finalISK.toLocaleString()} ISK\n📦 Główne przedmioty: ${topItems}`;
-                    copyBtn.classList.remove('hidden'); // Pokazujemy przycisk
+                    copyBtn.classList.remove('hidden'); 
                 }
 
             } catch (err) {
@@ -297,7 +286,6 @@
             }
         }
 
-        // Funkcja do obsługi przycisku kopiowania
         function copyReport() {
             if (!globalReportText) return;
             
@@ -308,7 +296,6 @@
                 btn.innerText = "SKOPIOWANO!";
                 btn.classList.add('text-green-400', 'border-green-500', 'bg-green-900/20');
                 
-                // Przywracamy wygląd po 2 sekundach
                 setTimeout(() => {
                     btn.innerText = originalText;
                     btn.classList.remove('text-green-400', 'border-green-500', 'bg-green-900/20');
@@ -358,12 +345,12 @@
                     responsive: true,
                     maintainAspectRatio: false,
                     layout: {
-                        padding: { bottom: 10, top: 10 } // Dodany padding, żeby wykres miał miejsce
+                        padding: { bottom: 10, top: 10 } 
                     },
                     plugins: {
                         legend: { 
-                            display: true, // WŁĄCZYŁEM LEGENDĘ
-                            position: 'bottom', // Umieszczona na dole pod wykresem
+                            display: true, 
+                            position: 'bottom', 
                             labels: {
                                 color: '#a1a1aa',
                                 font: { family: "'JetBrains Mono', monospace", size: 9 },
@@ -384,7 +371,7 @@
                             }
                         }
                     },
-                    cutout: '65%' // Zrobiłem pierścień troszkę grubszym
+                    cutout: '65%' 
                 }
             });
         }
