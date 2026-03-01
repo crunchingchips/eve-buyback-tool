@@ -29,14 +29,18 @@
         <div class="grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-5 gap-6">
             
             <div class="xl:col-span-1 flex flex-col gap-4">
-                <div class="p-5 bg-[#121214] rounded-xl border border-gray-700/80 panel-glow flex flex-col justify-center">
+                <div class="p-5 bg-[#121214] rounded-xl border border-gray-700/80 panel-glow flex flex-col justify-center relative">
                     <div id="netLabel" class="text-[11px] text-gray-400 uppercase font-bold mb-2 tracking-widest">Wartość Szacunkowa:</div>
                     <div id="finalNet" class="text-3xl font-black text-green-400 tracking-tighter break-all">0 <span class="text-sm text-green-600">ISK</span></div>
+                    
+                    <button id="copyBtn" onclick="copyReport()" class="mt-4 w-full bg-[#18181b] hover:bg-[#27272a] border border-gray-700 text-gray-400 hover:text-white font-mono text-[10px] py-2 rounded uppercase transition-colors hidden cursor-pointer">
+                        Skopiuj Raport
+                    </button>
                 </div>
 
-                <div class="p-4 bg-[#121214] rounded-xl border border-gray-700/80 panel-glow hidden flex-grow" id="chartContainer">
-                    <div class="text-[11px] text-gray-400 uppercase font-bold mb-4 tracking-widest text-center border-b border-gray-800/50 pb-2">Struktura Wartości</div>
-                    <div class="relative w-full h-48 flex justify-center items-center mt-2">
+                <div class="p-4 bg-[#121214] rounded-xl border border-gray-700/80 panel-glow hidden flex-col flex-grow" id="chartContainer">
+                    <div class="text-[11px] text-gray-400 uppercase font-bold mb-2 tracking-widest text-center border-b border-gray-800/50 pb-2">Struktura Wartości</div>
+                    <div class="relative w-full flex-grow flex justify-center items-center min-h-[250px]">
                         <canvas id="valueChart"></canvas>
                     </div>
                 </div>
@@ -119,11 +123,15 @@
 
     <script>
         let myChart = null;
-        Chart.defaults.color = '#a1a1aa'; // jaśniejszy szary dla wykresu
+        let globalReportText = ""; // Zmienna do przechowywania tekstu dla schowka
+
+        // Konfiguracja domyślna wykresu
+        Chart.defaults.color = '#71717a'; // Kolor czcionek legendy
         Chart.defaults.font.family = "'JetBrains Mono', monospace";
 
         async function runProcessor() {
             const btn = document.getElementById('calcBtn');
+            const copyBtn = document.getElementById('copyBtn');
             const validTable = document.getElementById('validTable');
             const zeroTable = document.getElementById('zeroTable');
             const finalNet = document.getElementById('finalNet');
@@ -137,7 +145,9 @@
 
             if (!rawInput) return;
 
+            // Blokady na czas ładowania
             btn.disabled = true;
+            copyBtn.classList.add('hidden');
             btn.innerHTML = "<span class='animate-pulse'>Pobieranie Danych ESI...</span>";
             validTable.innerHTML = "<tr><td colspan='4' class='p-10 text-center text-yellow-400 animate-pulse font-sans'>Analiza Rynku w toku...</td></tr>";
             zeroTable.innerHTML = "";
@@ -168,7 +178,7 @@
 
                 const uniqueNames = Object.keys(inventoryMap);
 
-                // ID ESI Universe
+                // ID z ESI
                 const idRes = await fetch('https://esi.evetech.net/latest/universe/ids/', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
@@ -180,7 +190,7 @@
                 const foundItems = idData.inventory_types || idData.inventory || [];
                 if (foundItems.length === 0) throw new Error("ESI nie rozpoznało żadnej nazwy.");
 
-                // Ceny ESI
+                // Ceny z ESI
                 const prices = {};
 
                 if (regionId === 'global') {
@@ -254,16 +264,30 @@
                 document.getElementById('valuedCount').innerText = `${validItemsCount} poz.`;
                 document.getElementById('zeroCount').innerText = `${zeroItemsCount} poz.`;
 
+                // Obliczanie finałowej kwoty
                 const multiplier = 1 - (taxRate / 100);
+                const finalISK = Math.floor(totalValue * multiplier);
+                
                 if(taxRate > 0) {
                     netLabel.innerText = `Wartość Szacunkowa (-${taxRate}%):`;
                 } else {
                     netLabel.innerText = `Wartość Szacunkowa:`;
                 }
                 
-                finalNet.innerHTML = `${Math.floor(totalValue * multiplier).toLocaleString()} <span class="text-sm text-green-500">ISK</span>`;
+                finalNet.innerHTML = `${finalISK.toLocaleString()} <span class="text-sm text-green-500">ISK</span>`;
 
+                // Generowanie i Rysowanie Wykresu
                 renderChart(chartData);
+
+                // Przygotowanie tekstu do schowka
+                if (validItemsCount > 0) {
+                    // Sortujemy od najdroższych do najtańszych
+                    chartData.sort((a, b) => b.value - a.value);
+                    // Bierzemy 3 najdroższe przedmioty
+                    const topItems = chartData.slice(0, 3).map(item => item.name).join(', ');
+                    globalReportText = `🧾 Wycena Loots: ${finalISK.toLocaleString()} ISK\n📦 Główne przedmioty: ${topItems}`;
+                    copyBtn.classList.remove('hidden'); // Pokazujemy przycisk
+                }
 
             } catch (err) {
                 validTable.innerHTML = `<tr><td colspan='4' class='p-10 text-center text-red-400 font-sans font-bold'>BŁĄD: ${err.message}</td></tr>`;
@@ -273,9 +297,29 @@
             }
         }
 
+        // Funkcja do obsługi przycisku kopiowania
+        function copyReport() {
+            if (!globalReportText) return;
+            
+            navigator.clipboard.writeText(globalReportText).then(() => {
+                const btn = document.getElementById('copyBtn');
+                const originalText = btn.innerText;
+                
+                btn.innerText = "SKOPIOWANO!";
+                btn.classList.add('text-green-400', 'border-green-500', 'bg-green-900/20');
+                
+                // Przywracamy wygląd po 2 sekundach
+                setTimeout(() => {
+                    btn.innerText = originalText;
+                    btn.classList.remove('text-green-400', 'border-green-500', 'bg-green-900/20');
+                }, 2000);
+            });
+        }
+
         function renderChart(data) {
             const ctx = document.getElementById('valueChart').getContext('2d');
             document.getElementById('chartContainer').classList.remove('hidden');
+            document.getElementById('chartContainer').classList.add('flex');
 
             data.sort((a, b) => b.value - a.value);
 
@@ -313,8 +357,20 @@
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    layout: {
+                        padding: { bottom: 10, top: 10 } // Dodany padding, żeby wykres miał miejsce
+                    },
                     plugins: {
-                        legend: { display: false },
+                        legend: { 
+                            display: true, // WŁĄCZYŁEM LEGENDĘ
+                            position: 'bottom', // Umieszczona na dole pod wykresem
+                            labels: {
+                                color: '#a1a1aa',
+                                font: { family: "'JetBrains Mono', monospace", size: 9 },
+                                boxWidth: 10,
+                                padding: 15
+                            }
+                        },
                         tooltip: {
                             backgroundColor: '#18181b',
                             titleFont: { family: "'Inter', sans-serif" },
@@ -328,7 +384,7 @@
                             }
                         }
                     },
-                    cutout: '70%'
+                    cutout: '65%' // Zrobiłem pierścień troszkę grubszym
                 }
             });
         }
