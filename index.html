@@ -13,12 +13,26 @@
     </style>
 </head>
 <body class="bg-[#050505] text-gray-200 min-h-screen p-4 md:p-6 pb-16 font-sans">
-    <div class="max-w-7xl mx-auto">
+    <div class="max-w-[1400px] mx-auto">
         <h1 class="text-3xl font-black text-yellow-500 mb-6 uppercase italic tracking-wider">Buyback <span class="text-white">Analytics</span></h1>
         
-        <div class="grid grid-cols-1 xl:grid-cols-4 gap-6">
+        <div class="grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-5 gap-6">
+            
             <div class="xl:col-span-1 flex flex-col gap-4">
-                
+                <div class="p-4 bg-gray-900 rounded border border-gray-800 shadow-xl">
+                    <div id="netLabel" class="text-[10px] text-gray-500 uppercase font-bold mb-1 tracking-widest">Suma Netto (-10%):</div>
+                    <div id="finalNet" class="text-3xl font-black text-green-500 tracking-tighter break-all">0 ISK</div>
+                </div>
+
+                <div class="p-4 bg-gray-900 rounded border border-gray-800 shadow-xl hidden flex-grow" id="chartContainer">
+                    <div class="text-[9px] text-gray-500 uppercase font-bold mb-4 tracking-widest text-center">Struktura Wartości</div>
+                    <div class="relative w-full flex justify-center items-center">
+                        <canvas id="valueChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="xl:col-span-1 flex flex-col gap-4">
                 <div class="grid grid-cols-2 gap-2">
                     <div class="bg-gray-900 rounded border border-gray-800 p-2 shadow-lg">
                         <label class="block text-[9px] text-gray-500 uppercase font-bold mb-1">Źródło Wyceny:</label>
@@ -37,25 +51,13 @@
                     </div>
                 </div>
 
-                <div>
-                    <textarea id="invInput" class="w-full h-40 bg-gray-900 border border-gray-800 p-3 font-mono text-[10px] text-green-400 rounded-t outline-none focus:border-yellow-600 custom-scroll" placeholder="Wklej inwentarz..."></textarea>
-                    <button id="calcBtn" onclick="runProcessor()" class="w-full bg-yellow-600 hover:bg-yellow-500 text-black font-black py-3 rounded-b uppercase transition-all shadow-lg active:scale-95 text-sm">Oblicz Wycenę</button>
-                </div>
-                
-                <div class="p-4 bg-gray-900 rounded border border-gray-800 shadow-xl">
-                    <div id="netLabel" class="text-[10px] text-gray-500 uppercase font-bold mb-1 tracking-widest">Suma Netto (-10%):</div>
-                    <div id="finalNet" class="text-3xl font-black text-green-500 tracking-tighter">0 ISK</div>
-                </div>
-
-                <div class="p-3 bg-gray-900 rounded border border-gray-800 shadow-xl hidden" id="chartContainer">
-                    <div class="text-[9px] text-gray-500 uppercase font-bold mb-2 tracking-widest text-center">Struktura Wartości</div>
-                    <div class="relative h-40 w-full flex justify-center">
-                        <canvas id="valueChart"></canvas>
-                    </div>
+                <div class="flex-grow flex flex-col">
+                    <textarea id="invInput" class="w-full flex-grow min-h-[250px] bg-gray-900 border border-gray-800 p-3 font-mono text-[10px] text-green-400 rounded-t outline-none focus:border-yellow-600 custom-scroll" placeholder="Wklej inwentarz..."></textarea>
+                    <button id="calcBtn" onclick="runProcessor()" class="w-full bg-yellow-600 hover:bg-yellow-500 text-black font-black py-4 rounded-b uppercase transition-all shadow-lg active:scale-95 text-sm">Oblicz Wycenę</button>
                 </div>
             </div>
 
-            <div class="xl:col-span-3 space-y-6">
+            <div class="lg:col-span-3 xl:col-span-3 space-y-6">
                 <div class="bg-gray-900 rounded border border-gray-800 overflow-hidden shadow-xl text-xs">
                     <div class="bg-black/50 p-2 px-4 border-b border-gray-800 flex justify-between items-center">
                         <span class="text-yellow-500 font-bold uppercase tracking-widest text-[10px]">Przedmioty Wycenione</span>
@@ -115,7 +117,6 @@
             const netLabel = document.getElementById('netLabel');
             
             const regionId = document.getElementById('marketRegion').value;
-            // Pobieranie prowizji
             let taxRate = parseFloat(document.getElementById('taxRate').value);
             if(isNaN(taxRate) || taxRate < 0) taxRate = 0;
             
@@ -240,7 +241,6 @@
                 document.getElementById('valuedCount').innerText = `${validItemsCount} itemów`;
                 document.getElementById('zeroCount').innerText = `${zeroItemsCount} itemów`;
 
-                // Aplikacja podatku/prowizji
                 const multiplier = 1 - (taxRate / 100);
                 netLabel.innerText = `Suma Netto (-${taxRate}%):`;
                 finalNet.innerText = Math.floor(totalValue * multiplier).toLocaleString() + " ISK";
@@ -296,7 +296,7 @@
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: {
-                        legend: { display: false }, // Ukryto legendę dla oszczędności miejsca (info jest w toolipach)
+                        legend: { display: false },
                         tooltip: {
                             callbacks: {
                                 label: function(context) {
