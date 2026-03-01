@@ -2,7 +2,7 @@
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
-    <title>EVE Buyback Direct - Regional Markets</title>
+    <title>EVE Buyback Direct - Pro Analytics</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
@@ -12,78 +12,87 @@
         .custom-scroll::-webkit-scrollbar-thumb:hover { background: #555; }
     </style>
 </head>
-<body class="bg-[#050505] text-gray-200 min-h-screen p-8 font-sans">
+<body class="bg-[#050505] text-gray-200 min-h-screen p-4 md:p-6 pb-16 font-sans">
     <div class="max-w-7xl mx-auto">
-        <h1 class="text-3xl font-black text-yellow-500 mb-8 uppercase italic tracking-wider">Buyback <span class="text-white">Analytics</span></h1>
+        <h1 class="text-3xl font-black text-yellow-500 mb-6 uppercase italic tracking-wider">Buyback <span class="text-white">Analytics</span></h1>
         
-        <div class="grid grid-cols-1 xl:grid-cols-4 gap-8">
-            <div class="xl:col-span-1 space-y-4">
+        <div class="grid grid-cols-1 xl:grid-cols-4 gap-6">
+            <div class="xl:col-span-1 flex flex-col gap-4">
                 
-                <div class="bg-gray-900 rounded-lg border border-gray-800 p-2 shadow-lg">
-                    <label class="block text-[10px] text-gray-500 uppercase font-bold mb-1 ml-2">Źródło Wyceny:</label>
-                    <select id="marketRegion" class="w-full bg-black border border-gray-800 p-3 font-bold text-xs text-yellow-500 rounded outline-none focus:border-yellow-600 cursor-pointer">
-                        <option value="global">Średnia ESI (Błyskawicznie)</option>
-                        <option value="10000002">Jita / The Forge (Najwyższy Buy)</option>
-                        <option value="10000043">Amarr / Domain (Najwyższy Buy)</option>
-                        <option value="10000032">Dodixie / Sinq Laison (Najwyższy Buy)</option>
-                        <option value="10000030">Rens / Heimatar (Najwyższy Buy)</option>
-                    </select>
+                <div class="grid grid-cols-2 gap-2">
+                    <div class="bg-gray-900 rounded border border-gray-800 p-2 shadow-lg">
+                        <label class="block text-[9px] text-gray-500 uppercase font-bold mb-1">Źródło Wyceny:</label>
+                        <select id="marketRegion" class="w-full bg-black border border-gray-800 p-2 font-bold text-[10px] text-yellow-500 rounded outline-none cursor-pointer">
+                            <option value="global">Średnia ESI</option>
+                            <option value="10000002">Jita (Buy)</option>
+                            <option value="10000043">Amarr (Buy)</option>
+                            <option value="10000032">Dodixie (Buy)</option>
+                            <option value="10000030">Rens (Buy)</option>
+                        </select>
+                    </div>
+
+                    <div class="bg-gray-900 rounded border border-gray-800 p-2 shadow-lg">
+                        <label class="block text-[9px] text-gray-500 uppercase font-bold mb-1">Prowizja (%):</label>
+                        <input type="number" id="taxRate" value="10" min="0" max="100" class="w-full bg-black border border-gray-800 p-2 font-bold text-xs text-green-500 rounded outline-none text-center">
+                    </div>
                 </div>
 
                 <div>
-                    <textarea id="invInput" class="w-full h-56 bg-gray-900 border border-gray-800 p-4 font-mono text-[11px] text-green-400 rounded-lg outline-none focus:border-yellow-600 custom-scroll" placeholder="Wklej inwentarz..."></textarea>
-                    <button id="calcBtn" onclick="runProcessor()" class="w-full mt-2 bg-yellow-600 hover:bg-yellow-500 text-black font-black py-4 rounded-lg uppercase transition-all shadow-lg active:scale-95">Oblicz Wycenę</button>
+                    <textarea id="invInput" class="w-full h-40 bg-gray-900 border border-gray-800 p-3 font-mono text-[10px] text-green-400 rounded-t outline-none focus:border-yellow-600 custom-scroll" placeholder="Wklej inwentarz..."></textarea>
+                    <button id="calcBtn" onclick="runProcessor()" class="w-full bg-yellow-600 hover:bg-yellow-500 text-black font-black py-3 rounded-b uppercase transition-all shadow-lg active:scale-95 text-sm">Oblicz Wycenę</button>
                 </div>
                 
-                <div class="p-6 bg-gray-900 rounded-xl border border-gray-800 shadow-xl relative overflow-hidden">
-                    <div class="text-[10px] text-gray-500 uppercase font-bold mb-1 tracking-widest relative z-10">Suma Netto (-10%):</div>
-                    <div id="finalNet" class="text-2xl font-black text-green-500 relative z-10">0 ISK</div>
+                <div class="p-4 bg-gray-900 rounded border border-gray-800 shadow-xl">
+                    <div id="netLabel" class="text-[10px] text-gray-500 uppercase font-bold mb-1 tracking-widest">Suma Netto (-10%):</div>
+                    <div id="finalNet" class="text-3xl font-black text-green-500 tracking-tighter">0 ISK</div>
                 </div>
 
-                <div class="p-4 bg-gray-900 rounded-xl border border-gray-800 shadow-xl hidden" id="chartContainer">
-                    <div class="text-[10px] text-gray-500 uppercase font-bold mb-4 tracking-widest text-center">Struktura Wartości</div>
-                    <canvas id="valueChart" width="200" height="200"></canvas>
+                <div class="p-3 bg-gray-900 rounded border border-gray-800 shadow-xl hidden" id="chartContainer">
+                    <div class="text-[9px] text-gray-500 uppercase font-bold mb-2 tracking-widest text-center">Struktura Wartości</div>
+                    <div class="relative h-40 w-full flex justify-center">
+                        <canvas id="valueChart"></canvas>
+                    </div>
                 </div>
             </div>
 
-            <div class="xl:col-span-3 space-y-8">
-                <div class="bg-gray-900 rounded-xl border border-gray-800 overflow-hidden shadow-xl text-xs">
-                    <div class="bg-black/50 p-3 border-b border-gray-800 flex justify-between items-center">
+            <div class="xl:col-span-3 space-y-6">
+                <div class="bg-gray-900 rounded border border-gray-800 overflow-hidden shadow-xl text-xs">
+                    <div class="bg-black/50 p-2 px-4 border-b border-gray-800 flex justify-between items-center">
                         <span class="text-yellow-500 font-bold uppercase tracking-widest text-[10px]">Przedmioty Wycenione</span>
-                        <span id="valuedCount" class="text-gray-500 font-mono">0 itemów</span>
+                        <span id="valuedCount" class="text-gray-500 font-mono text-[10px]">0 itemów</span>
                     </div>
-                    <div class="max-h-[400px] overflow-y-auto custom-scroll">
+                    <div class="max-h-[350px] overflow-y-auto custom-scroll">
                         <table class="w-full text-left">
-                            <thead class="bg-gray-900 sticky top-0 text-gray-500 uppercase text-[10px] font-bold shadow-md">
+                            <thead class="bg-gray-900 sticky top-0 text-gray-500 uppercase text-[9px] font-bold shadow-md">
                                 <tr>
-                                    <th class="px-4 py-3">Przedmiot</th>
-                                    <th class="px-4 py-3 text-right">Ilość</th>
-                                    <th class="px-4 py-3 text-right">Cena (Sztuka)</th>
-                                    <th class="px-4 py-3 text-right">Suma</th>
+                                    <th class="px-4 py-2">Przedmiot</th>
+                                    <th class="px-4 py-2 text-right">Ilość</th>
+                                    <th class="px-4 py-2 text-right">Cena (Sztuka)</th>
+                                    <th class="px-4 py-2 text-right">Suma</th>
                                 </tr>
                             </thead>
-                            <tbody id="validTable" class="divide-y divide-gray-800 font-mono text-gray-300">
+                            <tbody id="validTable" class="divide-y divide-gray-800 font-mono text-gray-300 text-[11px]">
                                 <tr><td colspan="4" class="p-8 text-center text-gray-600 italic">Oczekuję na dane...</td></tr>
                             </tbody>
                         </table>
                     </div>
                 </div>
 
-                <div class="bg-[#1a0f0f] rounded-xl border border-red-900/30 overflow-hidden shadow-xl text-xs">
-                    <div class="bg-black/50 p-3 border-b border-red-900/30 flex justify-between items-center">
-                        <span class="text-red-400 font-bold uppercase tracking-widest text-[10px]">Wycena Manualna (Brak Zleceń Kupna / Limitowane)</span>
-                        <span id="zeroCount" class="text-gray-500 font-mono">0 itemów</span>
+                <div class="bg-[#1a0f0f] rounded border border-red-900/30 overflow-hidden shadow-xl text-xs">
+                    <div class="bg-black/50 p-2 px-4 border-b border-red-900/30 flex justify-between items-center">
+                        <span class="text-red-400 font-bold uppercase tracking-widest text-[10px]">Wycena Manualna (Brak Ofert / Limitowane)</span>
+                        <span id="zeroCount" class="text-gray-500 font-mono text-[10px]">0 itemów</span>
                     </div>
-                    <div class="max-h-[250px] overflow-y-auto custom-scroll">
+                    <div class="max-h-[200px] overflow-y-auto custom-scroll">
                         <table class="w-full text-left">
-                            <thead class="bg-[#1a0f0f] sticky top-0 text-red-500/50 uppercase text-[10px] font-bold shadow-md">
+                            <thead class="bg-[#1a0f0f] sticky top-0 text-red-500/50 uppercase text-[9px] font-bold shadow-md">
                                 <tr>
-                                    <th class="px-4 py-3">Przedmiot</th>
-                                    <th class="px-4 py-3 text-right">Ilość</th>
-                                    <th class="px-4 py-3 text-right">Status</th>
+                                    <th class="px-4 py-2">Przedmiot</th>
+                                    <th class="px-4 py-2 text-right">Ilość</th>
+                                    <th class="px-4 py-2 text-right">Status</th>
                                 </tr>
                             </thead>
-                            <tbody id="zeroTable" class="divide-y divide-red-900/20 font-mono text-gray-400">
+                            <tbody id="zeroTable" class="divide-y divide-red-900/20 font-mono text-gray-400 text-[11px]">
                                 <tr><td colspan="3" class="p-4 text-center text-red-900/50 italic">Czysto</td></tr>
                             </tbody>
                         </table>
@@ -103,7 +112,13 @@
             const validTable = document.getElementById('validTable');
             const zeroTable = document.getElementById('zeroTable');
             const finalNet = document.getElementById('finalNet');
+            const netLabel = document.getElementById('netLabel');
+            
             const regionId = document.getElementById('marketRegion').value;
+            // Pobieranie prowizji
+            let taxRate = parseFloat(document.getElementById('taxRate').value);
+            if(isNaN(taxRate) || taxRate < 0) taxRate = 0;
+            
             const rawInput = document.getElementById('invInput').value.trim();
 
             if (!rawInput) return;
@@ -139,7 +154,7 @@
 
                 const uniqueNames = Object.keys(inventoryMap);
 
-                // 2. Pobieranie ID
+                // 2. ID
                 const idRes = await fetch('https://esi.evetech.net/latest/universe/ids/', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
@@ -151,7 +166,7 @@
                 const foundItems = idData.inventory_types || idData.inventory || [];
                 if (foundItems.length === 0) throw new Error("ESI nie rozpoznało nazw.");
 
-                // 3. Pobieranie Cen (Logika Regionalna)
+                // 3. Ceny
                 const prices = {};
 
                 if (regionId === 'global') {
@@ -160,29 +175,24 @@
                     const priceData = await priceRes.json();
                     priceData.forEach(p => prices[p.type_id] = p.adjusted_price || 0);
                 } else {
-                    // Pobieranie zleceń KUPNA dla konkretnego regionu
-                    validTable.innerHTML = "<tr><td colspan='4' class='p-10 text-center text-yellow-500 animate-pulse'>Pobieranie zleceń regionalnych (może zająć kilka sekund)...</td></tr>";
-                    
+                    validTable.innerHTML = "<tr><td colspan='4' class='p-10 text-center text-yellow-500 animate-pulse'>Pobieranie zleceń regionalnych...</td></tr>";
                     const fetchRegionalPrice = async (item) => {
                         try {
                             const res = await fetch(`https://esi.evetech.net/latest/markets/${regionId}/orders/?datasource=tranquility&order_type=buy&type_id=${item.id}`);
                             if (!res.ok) return { id: item.id, price: 0 };
                             const orders = await res.json();
-                            // Szukamy najwyższej oferty kupna (Max Buy)
                             const maxBuy = orders.length > 0 ? Math.max(...orders.map(o => o.price)) : 0;
                             return { id: item.id, price: maxBuy };
                         } catch (e) {
                             return { id: item.id, price: 0 };
                         }
                     };
-
-                    // Wysyłamy wszystkie zapytania naraz (Promise.all)
                     const pricePromises = foundItems.map(item => fetchRegionalPrice(item));
                     const priceResults = await Promise.all(pricePromises);
                     priceResults.forEach(p => prices[p.id] = p.price);
                 }
 
-                // 4. Budowanie Tabel
+                // 4. Tabele
                 validTable.innerHTML = "";
                 let totalValue = 0;
                 let validItemsCount = 0;
@@ -204,7 +214,7 @@
                             <tr class="hover:bg-white/5 border-b border-gray-800/50">
                                 <td class="px-4 py-2 flex items-center gap-3">
                                     <img src="https://images.evetech.net/types/${item.id}/icon?size=32" class="w-6 h-6 rounded" ${fallbackImg}>
-                                    <span class="text-gray-300">${item.name}</span>
+                                    <span class="text-gray-300 truncate max-w-[150px] md:max-w-xs" title="${item.name}">${item.name}</span>
                                 </td>
                                 <td class="px-4 py-2 text-right text-yellow-600">${qty.toLocaleString()}</td>
                                 <td class="px-4 py-2 text-right text-gray-500">${Math.floor(price).toLocaleString()}</td>
@@ -216,21 +226,24 @@
                             <tr class="hover:bg-red-900/20 border-b border-red-900/20">
                                 <td class="px-4 py-2 flex items-center gap-3">
                                     <img src="https://images.evetech.net/types/${item.id}/icon?size=32" class="w-6 h-6 rounded opacity-50" ${fallbackImg}>
-                                    <span class="text-red-300">${item.name}</span>
+                                    <span class="text-red-300 truncate max-w-[150px] md:max-w-xs" title="${item.name}">${item.name}</span>
                                 </td>
                                 <td class="px-4 py-2 text-right text-yellow-600/50">${qty.toLocaleString()}</td>
-                                <td class="px-4 py-2 text-right text-red-500 text-[10px] uppercase">Wycena Manualna</td>
+                                <td class="px-4 py-2 text-right text-red-500 text-[9px] uppercase">Wycena Manualna</td>
                             </tr>`;
                     }
                 });
 
-                if(validItemsCount === 0) validTable.innerHTML = "<tr><td colspan='4' class='p-4 text-center'>Brak przedmiotów ze zleceniami kupna w tym regionie!</td></tr>";
-                if(zeroItemsCount === 0) zeroTable.innerHTML = "<tr><td colspan='3' class='p-4 text-center text-green-900'>Wszystko wycenione pomyślnie!</td></tr>";
+                if(validItemsCount === 0) validTable.innerHTML = "<tr><td colspan='4' class='p-4 text-center'>Brak rynkowych ofert</td></tr>";
+                if(zeroItemsCount === 0) zeroTable.innerHTML = "<tr><td colspan='3' class='p-4 text-center text-green-900'>Wszystko wycenione!</td></tr>";
 
                 document.getElementById('valuedCount').innerText = `${validItemsCount} itemów`;
                 document.getElementById('zeroCount').innerText = `${zeroItemsCount} itemów`;
 
-                finalNet.innerText = Math.floor(totalValue * 0.9).toLocaleString() + " ISK";
+                // Aplikacja podatku/prowizji
+                const multiplier = 1 - (taxRate / 100);
+                netLabel.innerText = `Suma Netto (-${taxRate}%):`;
+                finalNet.innerText = Math.floor(totalValue * multiplier).toLocaleString() + " ISK";
 
                 renderChart(chartData);
 
@@ -262,7 +275,7 @@
             }
 
             if (otherValue > 0) {
-                labels.push("Pozostałe minerały/itemy");
+                labels.push("Pozostałe itemy");
                 values.push(otherValue);
             }
 
@@ -276,13 +289,14 @@
                         data: values,
                         backgroundColor: ['#ca8a04', '#eab308', '#854d0e', '#374151', '#4b5563', '#1f2937'],
                         borderWidth: 1,
-                        borderColor: '#111'
+                        borderColor: '#050505'
                     }]
                 },
                 options: {
                     responsive: true,
+                    maintainAspectRatio: false,
                     plugins: {
-                        legend: { position: 'bottom', labels: { boxWidth: 10, font: {size: 10} } },
+                        legend: { display: false }, // Ukryto legendę dla oszczędności miejsca (info jest w toolipach)
                         tooltip: {
                             callbacks: {
                                 label: function(context) {
@@ -292,7 +306,7 @@
                             }
                         }
                     },
-                    cutout: '70%'
+                    cutout: '75%'
                 }
             });
         }
