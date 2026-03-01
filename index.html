@@ -21,9 +21,15 @@
 </head>
 <body class="bg-[#09090b] text-gray-300 min-h-screen p-4 md:p-6 pb-16">
     <div class="max-w-[1400px] mx-auto">
-        <header class="mb-8 border-b border-gray-800/50 pb-4">
-            <h1 class="text-3xl font-black text-gray-100 tracking-tight uppercase">ESI Loot <span class="text-yellow-500">Analyzer</span></h1>
-            <p class="text-xs text-gray-400 font-mono mt-1">Skaner Wartości Rynkowej Inwentarza</p>
+        <header class="mb-8 border-b border-gray-800/50 pb-4 flex justify-between items-end">
+            <div>
+                <h1 class="text-3xl font-black text-gray-100 tracking-tight uppercase">ESI Loot <span class="text-yellow-500">Analyzer</span></h1>
+                <p id="titleSub" class="text-xs text-gray-400 font-mono mt-1">Skaner Wartości Rynkowej Inwentarza</p>
+            </div>
+            <div class="flex gap-4 pb-1">
+                <button onclick="switchLang('pl')" id="lang-pl" class="text-2xl transition-all cursor-pointer" title="Polski">🇵🇱</button>
+                <button onclick="switchLang('en')" id="lang-en" class="text-2xl transition-all cursor-pointer" title="English">🇬🇧</button>
+            </div>
         </header>
         
         <div class="grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-5 gap-6">
@@ -39,7 +45,7 @@
                 </div>
 
                 <div class="h-[460px] p-4 bg-[#121214] rounded-xl border border-gray-700/80 panel-glow hidden flex-col" id="chartContainer">
-                    <div class="text-[11px] text-gray-400 uppercase font-bold mb-2 tracking-widest text-center border-b border-gray-800/50 pb-2">Struktura Wartości</div>
+                    <div id="chartTitle" class="text-[11px] text-gray-400 uppercase font-bold mb-2 tracking-widest text-center border-b border-gray-800/50 pb-2">Struktura Wartości</div>
                     <div class="relative w-full flex-grow flex justify-center items-center">
                         <canvas id="valueChart"></canvas>
                     </div>
@@ -49,9 +55,9 @@
             <div class="xl:col-span-1 flex flex-col gap-4">
                 <div class="h-[80px] grid grid-cols-2 gap-3">
                     <div class="bg-[#121214] rounded-xl border border-gray-700/80 p-2 md:p-3 panel-glow flex flex-col justify-center">
-                        <label class="block text-[10px] text-gray-400 uppercase font-bold mb-1">Źródło Danych:</label>
+                        <label id="dataSourceLabel" class="block text-[10px] text-gray-400 uppercase font-bold mb-1">Źródło Danych:</label>
                         <select id="marketRegion" class="w-full bg-[#09090b] border border-gray-600 p-1.5 font-mono text-xs text-yellow-400 rounded outline-none cursor-pointer focus:border-yellow-500 transition-colors">
-                            <option value="global">Średnia ESI</option>
+                            <option value="global" id="optGlobal">Średnia ESI</option>
                             <option value="10000002">Jita (Max Buy)</option>
                             <option value="10000043">Amarr (Max Buy)</option>
                             <option value="10000032">Dodixie (Max Buy)</option>
@@ -60,14 +66,14 @@
                     </div>
 
                     <div class="bg-[#121214] rounded-xl border border-gray-700/80 p-2 md:p-3 panel-glow flex flex-col justify-center">
-                        <label class="block text-[10px] text-gray-400 uppercase font-bold mb-1">Korekta (%):</label>
+                        <label id="taxLabelText" class="block text-[10px] text-gray-400 uppercase font-bold mb-1">Korekta (%):</label>
                         <input type="number" id="taxRate" value="0" min="0" max="100" class="w-full bg-[#09090b] border border-gray-600 p-1.5 font-mono text-xs text-gray-200 rounded outline-none text-center focus:border-yellow-500 transition-colors">
                     </div>
                 </div>
 
                 <div class="h-[520px] flex flex-col bg-[#121214] rounded-xl border border-gray-700/80 overflow-hidden panel-glow">
                     <div class="bg-[#18181b] p-3 border-b border-gray-700">
-                        <span class="text-[10px] text-gray-400 uppercase font-bold tracking-widest ml-2">Dane Wejściowe (Ctrl+V)</span>
+                        <span id="inputDataLabel" class="text-[10px] text-gray-400 uppercase font-bold tracking-widest ml-2">Dane Wejściowe (Ctrl+V)</span>
                     </div>
                     <textarea id="invInput" class="w-full flex-grow bg-transparent p-4 font-mono text-[11px] md:text-xs text-gray-300 outline-none resize-none custom-scroll placeholder-gray-600" placeholder="Zaznacz inwentarz w EVE Online i wklej go tutaj..."></textarea>
                     <button id="calcBtn" onclick="runProcessor()" class="w-full bg-yellow-500 hover:bg-yellow-400 text-black font-black py-4 uppercase transition-all active:scale-[0.98] text-sm tracking-wide shadow-lg">Skanuj Inwentarz</button>
@@ -77,21 +83,21 @@
             <div class="lg:col-span-3 xl:col-span-3 flex flex-col gap-4">
                 <div class="h-[300px] bg-[#121214] rounded-xl border border-gray-700/80 overflow-hidden panel-glow flex flex-col">
                     <div class="bg-[#18181b] p-3 px-5 border-b border-gray-700 flex justify-between items-center z-10">
-                        <span class="text-yellow-500 font-bold uppercase tracking-widest text-[11px]">Rozpoznane na rynku</span>
+                        <span id="t1Title" class="text-yellow-500 font-bold uppercase tracking-widest text-[11px]">Rozpoznane na rynku</span>
                         <span id="valuedCount" class="text-gray-300 font-mono text-[11px] bg-gray-800 px-2 py-1 rounded">0 poz.</span>
                     </div>
                     <div class="flex-grow overflow-y-auto custom-scroll relative">
                         <table class="w-full text-left">
                             <thead class="bg-[#121214]/95 backdrop-blur sticky top-0 text-gray-400 uppercase text-[10px] font-bold z-10 border-b border-gray-700">
                                 <tr>
-                                    <th class="px-5 py-3">Przedmiot</th>
-                                    <th class="px-5 py-3 text-right">Ilość</th>
-                                    <th class="px-5 py-3 text-right">Cena Jedn.</th>
-                                    <th class="px-5 py-3 text-right">Wartość</th>
+                                    <th id="t1Col1" class="px-5 py-3">Przedmiot</th>
+                                    <th id="t1Col2" class="px-5 py-3 text-right">Ilość</th>
+                                    <th id="t1Col3" class="px-5 py-3 text-right">Cena Jedn.</th>
+                                    <th id="t1Col4" class="px-5 py-3 text-right">Wartość</th>
                                 </tr>
                             </thead>
                             <tbody id="validTable" class="divide-y divide-gray-800/70 font-mono text-gray-200 text-xs">
-                                <tr><td colspan="4" class="p-10 text-center text-gray-500 italic font-sans text-sm">Czekam na skanowanie...</td></tr>
+                                <tr><td colspan="4" class="p-10 text-center text-gray-500 italic font-sans text-sm" id="t1Empty">Czekam na skanowanie...</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -99,20 +105,20 @@
 
                 <div class="h-[300px] bg-[#1a1515] rounded-xl border border-orange-800/40 overflow-hidden panel-glow flex flex-col">
                     <div class="bg-[#201818] p-3 px-5 border-b border-orange-800/50 flex justify-between items-center z-10">
-                        <span class="text-orange-400 font-bold uppercase tracking-widest text-[11px]">Poza rynkiem / Limitowane</span>
+                        <span id="t2Title" class="text-orange-400 font-bold uppercase tracking-widest text-[11px]">Poza rynkiem / Limitowane</span>
                         <span id="zeroCount" class="text-orange-200 font-mono text-[11px] bg-orange-900/50 px-2 py-1 rounded border border-orange-800/50">0 poz.</span>
                     </div>
                     <div class="flex-grow overflow-y-auto custom-scroll relative">
                         <table class="w-full text-left">
                             <thead class="bg-[#1a1515]/95 backdrop-blur sticky top-0 text-orange-400/80 uppercase text-[10px] font-bold z-10 border-b border-orange-800/40">
                                 <tr>
-                                    <th class="px-5 py-3">Przedmiot</th>
-                                    <th class="px-5 py-3 text-right">Ilość</th>
-                                    <th class="px-5 py-3 text-right">Status API</th>
+                                    <th id="t2Col1" class="px-5 py-3">Przedmiot</th>
+                                    <th id="t2Col2" class="px-5 py-3 text-right">Ilość</th>
+                                    <th id="t2Col3" class="px-5 py-3 text-right">Status API</th>
                                 </tr>
                             </thead>
                             <tbody id="zeroTable" class="divide-y divide-orange-900/30 font-mono text-gray-300 text-xs">
-                                <tr><td colspan="3" class="p-6 text-center text-orange-700/60 italic font-sans text-sm">Brak przedmiotów specjalnych</td></tr>
+                                <tr><td colspan="3" class="p-6 text-center text-orange-700/60 italic font-sans text-sm" id="t2Empty">Brak przedmiotów specjalnych</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -122,12 +128,138 @@
     </div>
 
     <script>
+        // SŁOWNIK JĘZYKOWY
+        const i18n = {
+            pl: {
+                titleSub: "Skaner Wartości Rynkowej Inwentarza",
+                estValue: "Wartość Szacunkowa:",
+                copyBtn: "Skopiuj Raport",
+                copiedBtn: "SKOPIOWANO!",
+                chartTitle: "Struktura Wartości",
+                dataSource: "Źródło Danych:",
+                taxLabel: "Korekta (%):",
+                inputData: "Dane Wejściowe (Ctrl+V)",
+                placeholder: "Zaznacz inwentarz w EVE Online i wklej go tutaj...",
+                scanBtn: "Skanuj Inwentarz",
+                t1Title: "Rozpoznane na rynku",
+                t1Col1: "Przedmiot",
+                t1Col2: "Ilość",
+                t1Col3: "Cena Jedn.",
+                t1Col4: "Wartość",
+                t1Empty: "Czekam na skanowanie...",
+                t2Title: "Poza rynkiem / Limitowane",
+                t2Col3: "Status API",
+                t2Empty: "Brak przedmiotów specjalnych",
+                optGlobal: "Średnia ESI",
+                noApiData: "Brak Danych API",
+                otherItems: "Pozostałe przedmioty",
+                fetching: "Pobieranie Danych ESI...",
+                analyzing: "Analiza Rynku w toku...",
+                scanning: "Skanowanie Zleceń Regionalnych...",
+                noMarketItems: "Brak przedmiotów o płynnej wartości rynkowej.",
+                reportVal: "🧾 Wycena Loots:",
+                reportItems: "📦 Główne przedmioty:",
+                items: "poz."
+            },
+            en: {
+                titleSub: "Market Value Inventory Scanner",
+                estValue: "Estimated Value:",
+                copyBtn: "Copy Report",
+                copiedBtn: "COPIED!",
+                chartTitle: "Value Structure",
+                dataSource: "Data Source:",
+                taxLabel: "Margin / Tax (%):",
+                inputData: "Input Data (Ctrl+V)",
+                placeholder: "Select your inventory in EVE Online and paste it here...",
+                scanBtn: "Scan Inventory",
+                t1Title: "Market Recognized",
+                t1Col1: "Item",
+                t1Col2: "Quantity",
+                t1Col3: "Unit Price",
+                t1Col4: "Total Value",
+                t1Empty: "Waiting for scan...",
+                t2Title: "Off-market / Limited",
+                t2Col3: "API Status",
+                t2Empty: "No special items",
+                optGlobal: "ESI Average",
+                noApiData: "No API Data",
+                otherItems: "Other items",
+                fetching: "Fetching ESI Data...",
+                analyzing: "Market Analysis in progress...",
+                scanning: "Scanning Regional Orders...",
+                noMarketItems: "No liquid market items found.",
+                reportVal: "🧾 Loot Value:",
+                reportItems: "📦 Top items:",
+                items: "items"
+            }
+        };
+
+        let currentLang = 'en'; 
         let myChart = null;
         let globalReportText = ""; 
 
         Chart.defaults.color = '#71717a'; 
         Chart.defaults.font.family = "'JetBrains Mono', monospace";
 
+        // FUNKCJA ZMIANY JĘZYKA
+        function switchLang(lang) {
+            currentLang = lang;
+            
+            // Styl flag
+            document.getElementById('lang-pl').className = lang === 'pl' ? 'text-2xl filter drop-shadow-[0_0_8px_rgba(255,255,255,0.6)] transition-all' : 'text-2xl filter grayscale opacity-40 hover:opacity-100 hover:grayscale-0 transition-all';
+            document.getElementById('lang-en').className = lang === 'en' ? 'text-2xl filter drop-shadow-[0_0_8px_rgba(255,255,255,0.6)] transition-all' : 'text-2xl filter grayscale opacity-40 hover:opacity-100 hover:grayscale-0 transition-all';
+
+            // Teksty statyczne
+            document.getElementById('titleSub').innerText = i18n[lang].titleSub;
+            document.getElementById('copyBtn').innerText = document.getElementById('copyBtn').innerText.includes("SKOPIOWANO") || document.getElementById('copyBtn').innerText.includes("COPIED") ? i18n[lang].copiedBtn : i18n[lang].copyBtn;
+            document.getElementById('chartTitle').innerText = i18n[lang].chartTitle;
+            document.getElementById('dataSourceLabel').innerText = i18n[lang].dataSource;
+            document.getElementById('optGlobal').innerText = i18n[lang].optGlobal;
+            document.getElementById('taxLabelText').innerText = i18n[lang].taxLabel;
+            document.getElementById('inputDataLabel').innerText = i18n[lang].inputData;
+            document.getElementById('invInput').placeholder = i18n[lang].placeholder;
+            if(!document.getElementById('calcBtn').disabled) document.getElementById('calcBtn').innerText = i18n[lang].scanBtn;
+            
+            document.getElementById('t1Title').innerText = i18n[lang].t1Title;
+            document.getElementById('t1Col1').innerText = i18n[lang].t1Col1;
+            document.getElementById('t1Col2').innerText = i18n[lang].t1Col2;
+            document.getElementById('t1Col3').innerText = i18n[lang].t1Col3;
+            document.getElementById('t1Col4').innerText = i18n[lang].t1Col4;
+
+            document.getElementById('t2Title').innerText = i18n[lang].t2Title;
+            document.getElementById('t2Col1').innerText = i18n[lang].t1Col1;
+            document.getElementById('t2Col2').innerText = i18n[lang].t1Col2;
+            document.getElementById('t2Col3').innerText = i18n[lang].t2Col3;
+
+            // Teksty dynamiczne / Puste tabele
+            let taxRate = parseFloat(document.getElementById('taxRate').value);
+            if(isNaN(taxRate) || taxRate < 0) taxRate = 0;
+            const netLabel = document.getElementById('netLabel');
+            if(taxRate > 0) {
+                netLabel.innerText = `${i18n[lang].estValue.replace(':', '')} (-${taxRate}%):`;
+            } else {
+                netLabel.innerText = i18n[lang].estValue;
+            }
+
+            const el1 = document.getElementById('t1Empty');
+            if(el1) el1.innerText = i18n[lang].t1Empty;
+            const el2 = document.getElementById('t2Empty');
+            if(el2) el2.innerText = i18n[lang].t2Empty;
+
+            // Liczniki
+            const vCount = document.getElementById('valuedCount').innerText;
+            document.getElementById('valuedCount').innerText = vCount.replace('poz.', i18n[lang].items).replace('items', i18n[lang].items);
+            const zCount = document.getElementById('zeroCount').innerText;
+            document.getElementById('zeroCount').innerText = zCount.replace('poz.', i18n[lang].items).replace('items', i18n[lang].items);
+        }
+
+        // WYKRYWANIE JĘZYKA PRZY STARCIE
+        document.addEventListener('DOMContentLoaded', () => {
+            const browserLang = navigator.language || navigator.userLanguage;
+            switchLang(browserLang.startsWith('pl') ? 'pl' : 'en');
+        });
+
+        // GŁÓWNY PROCESOR
         async function runProcessor() {
             const btn = document.getElementById('calcBtn');
             const copyBtn = document.getElementById('copyBtn');
@@ -146,8 +278,8 @@
 
             btn.disabled = true;
             copyBtn.classList.add('hidden');
-            btn.innerHTML = "<span class='animate-pulse'>Pobieranie Danych ESI...</span>";
-            validTable.innerHTML = "<tr><td colspan='4' class='p-10 text-center text-yellow-400 animate-pulse font-sans'>Analiza Rynku w toku...</td></tr>";
+            btn.innerHTML = `<span class='animate-pulse'>${i18n[currentLang].fetching}</span>`;
+            validTable.innerHTML = `<tr><td colspan='4' class='p-10 text-center text-yellow-400 animate-pulse font-sans'>${i18n[currentLang].analyzing}</td></tr>`;
             zeroTable.innerHTML = "";
 
             try {
@@ -180,21 +312,21 @@
                     headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
                     body: JSON.stringify(uniqueNames)
                 });
-                if (!idRes.ok) throw new Error("Błąd ESI (Universe API)");
+                if (!idRes.ok) throw new Error(currentLang === 'pl' ? "Błąd ESI (Universe API)" : "ESI Error (Universe API)");
                 const idData = await idRes.json();
                 
                 const foundItems = idData.inventory_types || idData.inventory || [];
-                if (foundItems.length === 0) throw new Error("ESI nie rozpoznało żadnej nazwy.");
+                if (foundItems.length === 0) throw new Error(currentLang === 'pl' ? "ESI nie rozpoznało żadnej nazwy." : "ESI did not recognize any names.");
 
                 const prices = {};
 
                 if (regionId === 'global') {
                     const priceRes = await fetch('https://esi.evetech.net/latest/markets/prices/');
-                    if (!priceRes.ok) throw new Error("Błąd ESI (Markets API)");
+                    if (!priceRes.ok) throw new Error(currentLang === 'pl' ? "Błąd ESI (Markets API)" : "ESI Error (Markets API)");
                     const priceData = await priceRes.json();
                     priceData.forEach(p => prices[p.type_id] = p.adjusted_price || 0);
                 } else {
-                    validTable.innerHTML = "<tr><td colspan='4' class='p-10 text-center text-yellow-400 animate-pulse font-sans'>Skanowanie Zleceń Regionalnych...</td></tr>";
+                    validTable.innerHTML = `<tr><td colspan='4' class='p-10 text-center text-yellow-400 animate-pulse font-sans'>${i18n[currentLang].scanning}</td></tr>`;
                     const fetchRegionalPrice = async (item) => {
                         try {
                             const res = await fetch(`https://esi.evetech.net/latest/markets/${regionId}/orders/?datasource=tranquility&order_type=buy&type_id=${item.id}`);
@@ -247,24 +379,24 @@
                                     <span class="text-orange-200/90 truncate max-w-[150px] md:max-w-[200px]" title="${item.name}">${item.name}</span>
                                 </td>
                                 <td class="px-5 py-3 text-right text-yellow-600/60">${qty.toLocaleString()}</td>
-                                <td class="px-5 py-3 text-right text-orange-500/80 text-[10px] uppercase tracking-wider font-bold">Brak Danych API</td>
+                                <td class="px-5 py-3 text-right text-orange-500/80 text-[10px] uppercase tracking-wider font-bold">${i18n[currentLang].noApiData}</td>
                             </tr>`;
                     }
                 });
 
-                if(validItemsCount === 0) validTable.innerHTML = "<tr><td colspan='4' class='p-10 text-center font-sans text-gray-400'>Brak przedmiotów o płynnej wartości rynkowej.</td></tr>";
-                if(zeroItemsCount === 0) zeroTable.innerHTML = "<tr><td colspan='3' class='p-6 text-center font-sans text-orange-700/60'>Brak przedmiotów specjalnych.</td></tr>";
+                if(validItemsCount === 0) validTable.innerHTML = `<tr><td colspan='4' class='p-10 text-center font-sans text-gray-400'>${i18n[currentLang].noMarketItems}</td></tr>`;
+                if(zeroItemsCount === 0) zeroTable.innerHTML = `<tr><td colspan='3' class='p-6 text-center font-sans text-orange-700/60'>${i18n[currentLang].t2Empty}</td></tr>`;
 
-                document.getElementById('valuedCount').innerText = `${validItemsCount} poz.`;
-                document.getElementById('zeroCount').innerText = `${zeroItemsCount} poz.`;
+                document.getElementById('valuedCount').innerText = `${validItemsCount} ${i18n[currentLang].items}`;
+                document.getElementById('zeroCount').innerText = `${zeroItemsCount} ${i18n[currentLang].items}`;
 
                 const multiplier = 1 - (taxRate / 100);
                 const finalISK = Math.floor(totalValue * multiplier);
                 
                 if(taxRate > 0) {
-                    netLabel.innerText = `Wartość Szacunkowa (-${taxRate}%):`;
+                    netLabel.innerText = `${i18n[currentLang].estValue.replace(':', '')} (-${taxRate}%):`;
                 } else {
-                    netLabel.innerText = `Wartość Szacunkowa:`;
+                    netLabel.innerText = i18n[currentLang].estValue;
                 }
                 
                 finalNet.innerHTML = `${finalISK.toLocaleString()} <span class="text-sm text-green-500">ISK</span>`;
@@ -274,7 +406,7 @@
                 if (validItemsCount > 0) {
                     chartData.sort((a, b) => b.value - a.value);
                     const topItems = chartData.slice(0, 3).map(item => item.name).join(', ');
-                    globalReportText = `🧾 Wycena Loots: ${finalISK.toLocaleString()} ISK\n📦 Główne przedmioty: ${topItems}`;
+                    globalReportText = `${i18n[currentLang].reportVal} ${finalISK.toLocaleString()} ISK\n${i18n[currentLang].reportItems} ${topItems}`;
                     copyBtn.classList.remove('hidden'); 
                 }
 
@@ -282,7 +414,7 @@
                 validTable.innerHTML = `<tr><td colspan='4' class='p-10 text-center text-red-400 font-sans font-bold'>BŁĄD: ${err.message}</td></tr>`;
             } finally {
                 btn.disabled = false;
-                btn.innerText = "Skanuj Inwentarz";
+                btn.innerText = i18n[currentLang].scanBtn;
             }
         }
 
@@ -293,7 +425,7 @@
                 const btn = document.getElementById('copyBtn');
                 const originalText = btn.innerText;
                 
-                btn.innerText = "SKOPIOWANO!";
+                btn.innerText = i18n[currentLang].copiedBtn;
                 btn.classList.add('text-green-400', 'border-green-500', 'bg-green-900/20');
                 
                 setTimeout(() => {
@@ -324,7 +456,7 @@
             }
 
             if (otherValue > 0) {
-                labels.push("Pozostałe przedmioty");
+                labels.push(i18n[currentLang].otherItems);
                 values.push(otherValue);
             }
 
