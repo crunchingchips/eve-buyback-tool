@@ -2,13 +2,17 @@
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
-    <title>ESI Loot Analyzer - EVE Online Market Tool</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EVE Online - MultiTool</title>
+    
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;900&family=JetBrains+Mono:wght@400;700&display=swap');
         
-        body { font-family: 'Inter', sans-serif; }
+        body { font-family: 'Inter', sans-serif; background: #09090b; color: #e0e0e0; margin: 0; }
         .font-mono { font-family: 'JetBrains Mono', monospace; }
         
         .custom-scroll::-webkit-scrollbar { width: 6px; }
@@ -17,496 +21,803 @@
         .custom-scroll::-webkit-scrollbar-thumb:hover { background: #52525b; }
         
         .panel-glow { box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5); }
+        
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-fade-in { animation: fadeIn 0.2s ease-out forwards; }
+
+        .nav-tab { padding: 10px 20px; font-weight: 900; text-transform: uppercase; cursor: pointer; border-bottom: 3px solid transparent; transition: 0.3s; color: #52525b; }
+        .nav-tab:hover { color: #a1a1aa; }
+        .nav-tab.active { color: #eab308; border-bottom-color: #eab308; }
+
+        input[type="number"]::-webkit-inner-spin-button, input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+        input[type="number"] { -moz-appearance: textfield; }
+
+        .autocomplete-items {
+            position: absolute; border: 1px solid #3f3f46; border-top: none; z-index: 99;
+            top: 100%; left: 0; right: 0; background-color: #121214;
+            box-shadow: 0 10px 20px -5px rgba(0, 0, 0, 0.9); border-radius: 0 0 8px 8px;
+            max-height: 280px; overflow-y: auto; font-family: 'Inter', sans-serif; font-size: 12px;
+        }
+        .autocomplete-items div { padding: 12px 15px; cursor: pointer; border-bottom: 1px solid #27272a; color: #a1a1aa; transition: all 0.1s; }
+        .autocomplete-items div:hover { background-color: #27272a; color: #eab308; }
+        .autocomplete-items div strong { color: #fff; font-weight: 900; }
     </style>
 </head>
-<body class="bg-[#09090b] text-gray-300 min-h-screen p-4 md:p-6 pb-16">
-    <div class="max-w-[1400px] mx-auto">
-        <header class="mb-8 border-b border-gray-800/50 pb-4 flex justify-between items-end">
+<body class="p-4 md:p-6 pb-16 min-h-screen">
+
+    <div class="max-w-[1400px] mx-auto relative">
+        
+        <header class="mb-6 border-b border-gray-800/50 pb-2 flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
             <div>
-                <h1 class="text-3xl font-black text-gray-100 tracking-tight uppercase">ESI Loot <span class="text-yellow-500">Analyzer</span></h1>
-                <p id="titleSub" class="text-xs text-gray-400 font-mono mt-1">Skaner Wartości Rynkowej Inwentarza</p>
+                <h1 class="text-3xl font-black text-gray-100 tracking-tight uppercase">EVE <span class="text-yellow-500">MultiTool</span></h1>
+                <div class="flex mt-2 gap-2">
+                    <div id="tab-loot" class="nav-tab active" onclick="openTab('loot')">Loot Analyzer</div>
+                    <div id="tab-industry" class="nav-tab" onclick="openTab('industry')">Industry Tool</div>
+                </div>
             </div>
-            <div class="flex gap-4 pb-1">
-                <button onclick="switchLang('pl')" id="lang-pl" class="text-2xl transition-all cursor-pointer" title="Polski">🇵🇱</button>
-                <button onclick="switchLang('en')" id="lang-en" class="text-2xl transition-all cursor-pointer" title="English">🇬🇧</button>
+            <div class="flex gap-4 pb-1 absolute top-0 right-0 md:relative">
+                <button onclick="setGlobalLanguage('pl')" id="lang-pl" class="text-2xl transition-all cursor-pointer filter grayscale opacity-40 hover:opacity-100 hover:grayscale-0" title="Polski">🇵🇱</button>
+                <button onclick="setGlobalLanguage('en')" id="lang-en" class="text-2xl transition-all cursor-pointer filter drop-shadow-[0_0_8px_rgba(255,255,255,0.6)]" title="English">🇬🇧</button>
             </div>
         </header>
-        
-        <div class="grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-5 gap-6">
-            
-            <div class="xl:col-span-1 flex flex-col gap-4">
-                <div class="h-[140px] p-5 bg-[#121214] rounded-xl border border-gray-700/80 panel-glow flex flex-col justify-center relative">
-                    <div id="netLabel" class="text-[11px] text-gray-400 uppercase font-bold mb-1 tracking-widest">Wartość Szacunkowa:</div>
-                    <div id="finalNet" class="text-3xl font-black text-green-400 tracking-tighter break-all">0 <span class="text-sm text-green-600">ISK</span></div>
-                    
-                    <button id="copyBtn" onclick="copyReport()" class="mt-3 w-full bg-[#18181b] hover:bg-[#27272a] border border-gray-700 text-gray-400 hover:text-white font-mono text-[10px] py-2 rounded uppercase transition-colors hidden cursor-pointer">
-                        Skopiuj Raport
-                    </button>
-                </div>
 
-                <div class="h-[460px] p-4 bg-[#121214] rounded-xl border border-gray-700/80 panel-glow hidden flex-col" id="chartContainer">
-                    <div id="chartTitle" class="text-[11px] text-gray-400 uppercase font-bold mb-2 tracking-widest text-center border-b border-gray-800/50 pb-2">Struktura Wartości</div>
-                    <div class="relative w-full flex-grow flex justify-center items-center">
-                        <canvas id="valueChart"></canvas>
+        <div id="content-loot" class="block animate-fade-in">
+            <p id="titleSub" class="text-xs text-gray-400 font-mono mb-4">Market Value Inventory Scanner</p>
+            <div class="grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-5 gap-6">
+                
+                <div class="xl:col-span-1 flex flex-col gap-4">
+                    <div class="h-[140px] p-5 bg-[#121214] rounded-xl border border-gray-700/80 panel-glow flex flex-col justify-center relative">
+                        <div id="netLabel" class="text-[11px] text-gray-400 uppercase font-bold mb-1 tracking-widest">Estimated Value:</div>
+                        <div id="finalNet" class="text-3xl font-black text-green-400 tracking-tighter break-all">0 <span class="text-sm text-green-600">ISK</span></div>
+                        <button id="copyBtn" onclick="copyReport()" class="mt-3 w-full bg-[#18181b] hover:bg-[#27272a] border border-gray-700 text-gray-400 hover:text-white font-mono text-[10px] py-2 rounded uppercase transition-colors hidden cursor-pointer">Copy Report</button>
                     </div>
-                </div>
-            </div>
-
-            <div class="xl:col-span-1 flex flex-col gap-4">
-                <div class="h-[80px] grid grid-cols-2 gap-3">
-                    <div class="bg-[#121214] rounded-xl border border-gray-700/80 p-2 md:p-3 panel-glow flex flex-col justify-center">
-                        <label id="dataSourceLabel" class="block text-[10px] text-gray-400 uppercase font-bold mb-1">Źródło Danych:</label>
-                        <select id="marketRegion" class="w-full bg-[#09090b] border border-gray-600 p-1.5 font-mono text-xs text-yellow-400 rounded outline-none cursor-pointer focus:border-yellow-500 transition-colors">
-                            <option value="global" id="optGlobal">Średnia ESI</option>
-                            <option value="10000002">Jita (Max Buy)</option>
-                            <option value="10000043">Amarr (Max Buy)</option>
-                            <option value="10000032">Dodixie (Max Buy)</option>
-                            <option value="10000030">Rens (Max Buy)</option>
-                        </select>
-                    </div>
-
-                    <div class="bg-[#121214] rounded-xl border border-gray-700/80 p-2 md:p-3 panel-glow flex flex-col justify-center">
-                        <label id="taxLabelText" class="block text-[10px] text-gray-400 uppercase font-bold mb-1">Korekta (%):</label>
-                        <input type="number" id="taxRate" value="0" min="0" max="100" class="w-full bg-[#09090b] border border-gray-600 p-1.5 font-mono text-xs text-gray-200 rounded outline-none text-center focus:border-yellow-500 transition-colors">
+                    <div class="h-[460px] p-4 bg-[#121214] rounded-xl border border-gray-700/80 panel-glow hidden flex-col" id="chartContainer">
+                        <div id="chartTitle" class="text-[11px] text-gray-400 uppercase font-bold mb-2 tracking-widest text-center border-b border-gray-800/50 pb-2">Value Structure</div>
+                        <div class="relative w-full flex-grow flex justify-center items-center">
+                            <canvas id="valueChart"></canvas>
+                        </div>
                     </div>
                 </div>
 
-                <div class="h-[520px] flex flex-col bg-[#121214] rounded-xl border border-gray-700/80 overflow-hidden panel-glow">
-                    <div class="bg-[#18181b] p-3 border-b border-gray-700">
-                        <span id="inputDataLabel" class="text-[10px] text-gray-400 uppercase font-bold tracking-widest ml-2">Dane Wejściowe (Ctrl+V)</span>
+                <div class="xl:col-span-1 flex flex-col gap-4">
+                    <div class="h-[80px] grid grid-cols-2 gap-3">
+                        <div class="bg-[#121214] rounded-xl border border-gray-700/80 p-2 md:p-3 panel-glow flex flex-col justify-center">
+                            <label id="dataSourceLabel" class="block text-[10px] text-gray-400 uppercase font-bold mb-1">Data Source:</label>
+                            <select id="marketRegion" class="w-full bg-[#09090b] border border-gray-600 p-1.5 font-mono text-xs text-yellow-400 rounded outline-none cursor-pointer focus:border-yellow-500 transition-colors">
+                                <option value="global" id="optGlobal">ESI Average</option>
+                                <option value="10000002">Jita (Max Buy)</option>
+                                <option value="10000043">Amarr (Max Buy)</option>
+                                <option value="10000032">Dodixie (Max Buy)</option>
+                                <option value="10000030">Rens (Max Buy)</option>
+                                <option value="10000042">Hek (Max Buy)</option>
+                            </select>
+                        </div>
+                        <div class="bg-[#121214] rounded-xl border border-gray-700/80 p-2 md:p-3 panel-glow flex flex-col justify-center">
+                            <label id="lootTaxLabelText" class="block text-[10px] text-gray-400 uppercase font-bold mb-1">Margin/Tax (%):</label>
+                            <input type="number" id="lootTaxRate" value="0" min="0" max="100" class="w-full bg-[#09090b] border border-gray-600 p-1.5 font-mono text-xs text-gray-200 rounded outline-none text-center focus:border-yellow-500 transition-colors">
+                        </div>
                     </div>
-                    <textarea id="invInput" class="w-full flex-grow bg-transparent p-4 font-mono text-[11px] md:text-xs text-gray-300 outline-none resize-none custom-scroll placeholder-gray-600" placeholder="Zaznacz inwentarz w EVE Online i wklej go tutaj..."></textarea>
-                    <button id="calcBtn" onclick="runProcessor()" class="w-full bg-yellow-500 hover:bg-yellow-400 text-black font-black py-4 uppercase transition-all active:scale-[0.98] text-sm tracking-wide shadow-lg">Skanuj Inwentarz</button>
-                </div>
-            </div>
-
-            <div class="lg:col-span-3 xl:col-span-3 flex flex-col gap-4">
-                <div class="h-[300px] bg-[#121214] rounded-xl border border-gray-700/80 overflow-hidden panel-glow flex flex-col">
-                    <div class="bg-[#18181b] p-3 px-5 border-b border-gray-700 flex justify-between items-center z-10">
-                        <span id="t1Title" class="text-yellow-500 font-bold uppercase tracking-widest text-[11px]">Rozpoznane na rynku</span>
-                        <span id="valuedCount" class="text-gray-300 font-mono text-[11px] bg-gray-800 px-2 py-1 rounded">0 poz.</span>
-                    </div>
-                    <div class="flex-grow overflow-y-auto custom-scroll relative">
-                        <table class="w-full text-left">
-                            <thead class="bg-[#121214]/95 backdrop-blur sticky top-0 text-gray-400 uppercase text-[10px] font-bold z-10 border-b border-gray-700">
-                                <tr>
-                                    <th id="t1Col1" class="px-5 py-3">Przedmiot</th>
-                                    <th id="t1Col2" class="px-5 py-3 text-right">Ilość</th>
-                                    <th id="t1Col3" class="px-5 py-3 text-right">Cena Jedn.</th>
-                                    <th id="t1Col4" class="px-5 py-3 text-right">Wartość</th>
-                                </tr>
-                            </thead>
-                            <tbody id="validTable" class="divide-y divide-gray-800/70 font-mono text-gray-200 text-xs">
-                                <tr><td colspan="4" class="p-10 text-center text-gray-500 italic font-sans text-sm" id="t1Empty">Czekam na skanowanie...</td></tr>
-                            </tbody>
-                        </table>
+                    <div class="h-[520px] flex flex-col bg-[#121214] rounded-xl border border-gray-700/80 overflow-hidden panel-glow">
+                        <div class="bg-[#18181b] p-3 border-b border-gray-700">
+                            <span id="inputDataLabel" class="text-[10px] text-gray-400 uppercase font-bold tracking-widest ml-2">Input Data (Ctrl+V)</span>
+                        </div>
+                        <textarea id="invInput" class="w-full flex-grow bg-transparent p-4 font-mono text-[11px] md:text-xs text-gray-300 outline-none resize-none custom-scroll placeholder-gray-600" placeholder="Select your inventory in EVE Online and paste it here..."></textarea>
+                        <button id="scanBtn" onclick="runProcessor()" class="w-full bg-yellow-500 hover:bg-yellow-400 text-black font-black py-4 uppercase transition-all active:scale-[0.98] text-sm tracking-wide shadow-lg">Scan Inventory</button>
                     </div>
                 </div>
 
-                <div class="h-[300px] bg-[#1a1515] rounded-xl border border-orange-800/40 overflow-hidden panel-glow flex flex-col">
-                    <div class="bg-[#201818] p-3 px-5 border-b border-orange-800/50 flex justify-between items-center z-10">
-                        <span id="t2Title" class="text-orange-400 font-bold uppercase tracking-widest text-[11px]">Poza rynkiem / Limitowane</span>
-                        <span id="zeroCount" class="text-orange-200 font-mono text-[11px] bg-orange-900/50 px-2 py-1 rounded border border-orange-800/50">0 poz.</span>
+                <div class="lg:col-span-3 xl:col-span-3 flex flex-col gap-4">
+                    <div class="h-[300px] bg-[#121214] rounded-xl border border-gray-700/80 overflow-hidden panel-glow flex flex-col">
+                        <div class="bg-[#18181b] p-3 px-5 border-b border-gray-700 flex justify-between items-center z-10">
+                            <span id="t1Title" class="text-yellow-500 font-bold uppercase tracking-widest text-[11px]">Market Recognized</span>
+                            <span id="valuedCount" class="text-gray-300 font-mono text-[11px] bg-gray-800 px-2 py-1 rounded">0 items</span>
+                        </div>
+                        <div class="flex-grow overflow-y-auto custom-scroll relative">
+                            <table class="w-full text-left">
+                                <thead class="bg-[#121214]/95 backdrop-blur sticky top-0 text-gray-400 uppercase text-[10px] font-bold z-10 border-b border-gray-700">
+                                    <tr>
+                                        <th id="t1Col1" class="px-5 py-3">Item</th>
+                                        <th id="t1Col2" class="px-5 py-3 text-right">Quantity</th>
+                                        <th id="t1Col3" class="px-5 py-3 text-right">Unit Price</th>
+                                        <th id="t1Col4" class="px-5 py-3 text-right">Total Value</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="validTable" class="divide-y divide-gray-800/70 font-mono text-gray-200 text-xs">
+                                    <tr><td colspan="4" class="p-10 text-center text-gray-500 italic font-sans text-sm" id="t1Empty">Waiting for scan...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
-                    <div class="flex-grow overflow-y-auto custom-scroll relative">
-                        <table class="w-full text-left">
-                            <thead class="bg-[#1a1515]/95 backdrop-blur sticky top-0 text-orange-400/80 uppercase text-[10px] font-bold z-10 border-b border-orange-800/40">
-                                <tr>
-                                    <th id="t2Col1" class="px-5 py-3">Przedmiot</th>
-                                    <th id="t2Col2" class="px-5 py-3 text-right">Ilość</th>
-                                    <th id="t2Col3" class="px-5 py-3 text-right">Status API</th>
-                                </tr>
-                            </thead>
-                            <tbody id="zeroTable" class="divide-y divide-orange-900/30 font-mono text-gray-300 text-xs">
-                                <tr><td colspan="3" class="p-6 text-center text-orange-700/60 italic font-sans text-sm" id="t2Empty">Brak przedmiotów specjalnych</td></tr>
-                            </tbody>
-                        </table>
+                    <div class="h-[300px] bg-[#1a1515] rounded-xl border border-orange-800/40 overflow-hidden panel-glow flex flex-col">
+                        <div class="bg-[#201818] p-3 px-5 border-b border-orange-800/50 flex justify-between items-center z-10">
+                            <span id="t2Title" class="text-orange-400 font-bold uppercase tracking-widest text-[11px]">Off-market / Limited</span>
+                            <span id="zeroCount" class="text-orange-200 font-mono text-[11px] bg-orange-900/50 px-2 py-1 rounded border border-orange-800/50">0 items</span>
+                        </div>
+                        <div class="flex-grow overflow-y-auto custom-scroll relative">
+                            <table class="w-full text-left">
+                                <thead class="bg-[#1a1515]/95 backdrop-blur sticky top-0 text-orange-400/80 uppercase text-[10px] font-bold z-10 border-b border-orange-800/40">
+                                    <tr>
+                                        <th id="t2Col1" class="px-5 py-3">Item</th>
+                                        <th id="t2Col2" class="px-5 py-3 text-right">Quantity</th>
+                                        <th id="t2Col3" class="px-5 py-3 text-right">API Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="zeroTable" class="divide-y divide-orange-900/30 font-mono text-gray-300 text-xs">
+                                    <tr><td colspan="3" class="p-6 text-center text-orange-700/60 italic font-sans text-sm" id="t2Empty">No special items</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
+
+        <div id="content-industry" class="hidden animate-fade-in">
+            <p id="indSub" class="text-xs text-gray-400 font-mono mb-4">Production Cost & Profit Calculator</p>
+            
+            <div class="flex flex-col md:flex-row gap-4 lg:gap-6 mb-6">
+                
+                <div class="w-full md:w-[160px] h-[160px] shrink-0 bg-[#121214] rounded-xl border border-gray-700/80 panel-glow flex items-center justify-center p-2 overflow-hidden">
+                    <img src="https://images.evetech.net/types/626/render?size=256" id="mainIcon" alt="Item Render" class="max-h-full max-w-full object-contain drop-shadow-xl">
+                </div>
+
+                <div class="w-full md:w-[220px] flex flex-col justify-between bg-[#121214] rounded-xl border border-gray-700/80 panel-glow p-4 lg:p-5 shrink-0">
+                    <div class="flex gap-4 mb-4">
+                        <div class="flex-1">
+                            <label class="block text-[10px] text-gray-400 uppercase font-bold mb-1.5"><i class="fas fa-hammer mr-1 text-gray-500"></i> <span data-i18n="meLabel">ME (Level):</span></label>
+                            <input type="number" id="meInput" value="10" min="0" max="10" oninput="updateMathLive()" class="w-full bg-[#09090b] border border-gray-600 p-2 font-mono text-sm text-yellow-400 rounded outline-none text-center focus:border-yellow-500 transition-colors">
+                        </div>
+                        <div class="flex-1">
+                            <label class="block text-[10px] text-gray-400 uppercase font-bold mb-1.5"><i class="fas fa-stopwatch mr-1 text-gray-500"></i> <span data-i18n="teLabel">TE (Level):</span></label>
+                            <input type="number" id="teInput" value="20" min="0" max="20" step="2" oninput="updateMathLive()" class="w-full bg-[#09090b] border border-gray-600 p-2 font-mono text-sm text-yellow-400 rounded outline-none text-center focus:border-yellow-500 transition-colors">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] text-gray-400 uppercase font-bold mb-1.5"><i class="fas fa-layer-group mr-1 text-gray-500"></i> <span data-i18n="runsLabel">Runs:</span></label>
+                        <input type="number" id="runsInput" value="1" min="1" oninput="updateMathLive()" class="w-full bg-[#09090b] border border-gray-600 p-2 font-mono text-lg text-white rounded outline-none text-center focus:border-yellow-500 transition-colors">
+                    </div>
+                </div>
+
+                <div class="flex-grow flex flex-col justify-between bg-[#121214] rounded-xl border border-gray-700/80 panel-glow p-4 lg:p-5 min-w-0">
+                    <div class="grid grid-cols-1 lg:grid-cols-5 gap-4 mb-4">
+                        <div class="lg:col-span-2 relative">
+                            <label class="block text-[10px] text-gray-400 uppercase font-bold mb-1.5 flex justify-between">
+                                <span><i class="fas fa-search mr-1 text-gray-500"></i> <span data-i18n="bpLabel">Blueprint / Item:</span></span>
+                                <span id="dbStatus" class="text-[9px] text-yellow-600 font-mono tracking-widest"></span>
+                            </label>
+                            <input type="text" id="bpInput" value="Vexor" placeholder="np. Vexor, Hobgoblin II..." autocomplete="off" class="w-full bg-[#09090b] border border-gray-600 p-2 font-mono text-sm text-white rounded outline-none focus:border-yellow-500 transition-colors">
+                        </div>
+                        <div class="lg:col-span-2 relative">
+                            <label class="block text-[10px] text-gray-400 uppercase font-bold mb-1.5"><i class="fas fa-space-shuttle mr-1 text-gray-500"></i> <span data-i18n="stationLabel">Solar System (for SCI):</span></label>
+                            <input type="text" id="systemInput" value="Perimeter" placeholder="np. Perimeter..." autocomplete="off" class="w-full bg-[#09090b] border border-gray-600 p-2 font-mono text-sm text-white rounded outline-none focus:border-yellow-500 transition-colors">
+                        </div>
+                        <div class="lg:col-span-1 flex items-end">
+                            <button class="w-full bg-yellow-500 hover:bg-yellow-400 text-black font-black py-2.5 rounded uppercase transition-all active:scale-[0.98] text-xs tracking-wide shadow-lg" onclick="fetchIndustryData()" data-i18n="calcBtn">CALCULATE</button>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-[10px] text-gray-400 uppercase font-bold mb-1.5">
+                                <i class="fas fa-percent mr-1 text-gray-500"></i> <span data-i18n="indTaxLabel">Facility Tax (%):</span>
+                            </label>
+                            <input type="number" id="taxInput" value="1.0" step="0.1" oninput="updateMathLive()" class="w-full bg-[#09090b] border border-gray-600 p-2 font-mono text-sm text-gray-300 rounded outline-none text-right focus:border-yellow-500 transition-colors">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] text-gray-400 uppercase font-bold mb-1.5"><i class="fas fa-globe mr-1 text-gray-500"></i> <span data-i18n="hubLabel">Market (Hub):</span></label>
+                            <select id="marketHub" class="w-full bg-[#09090b] border border-gray-600 p-2 font-mono text-sm text-yellow-400 rounded outline-none cursor-pointer focus:border-yellow-500 transition-colors">
+                                <option value="60003760">Jita (4-4 Caldari Navy)</option>
+                                <option value="60008494">Amarr (Emperor Family)</option>
+                                <option value="60011866">Dodixie (Fed. Navy)</option>
+                                <option value="60004588">Rens (Brutor Tribe)</option>
+                                <option value="60005686">Hek (Boundless Creation)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] text-gray-400 uppercase font-bold mb-1.5"><i class="fas fa-coins mr-1 text-gray-500"></i> <span data-i18n="priceLabel">Est. Item Price:</span></label>
+                            <div class="w-full bg-[#09090b] border border-gray-600 p-2 font-mono text-sm text-yellow-500 font-bold rounded text-right overflow-hidden truncate" id="itemPriceOutput">0 ISK</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="bg-[#121214] rounded-xl border border-gray-700/80 overflow-hidden panel-glow flex flex-col h-[400px]">
+                    <div class="bg-[#18181b] p-3 px-5 border-b border-gray-700 text-yellow-500 font-bold uppercase tracking-widest text-[11px]" data-i18n="col1Title">
+                        <i class="fas fa-cubes mr-2"></i> Base Materials
+                    </div>
+                    <ul class="flex-grow overflow-y-auto custom-scroll divide-y divide-gray-800/70 font-mono text-gray-300 text-xs" id="col1List">
+                        <li class="p-6 text-center text-gray-600 italic font-sans" id="indEmpty1">Waiting for calculation...</li>
+                    </ul>
+                </div>
+                
+                <div class="bg-[#121214] rounded-xl border border-gray-700/80 overflow-hidden panel-glow flex flex-col h-[400px]">
+                    <div class="bg-[#18181b] p-3 px-5 border-b border-gray-700 text-yellow-500 font-bold uppercase tracking-widest text-[11px]" data-i18n="col2Title">
+                        <i class="fas fa-bolt mr-2"></i> Editable Materials
+                    </div>
+                    <ul class="flex-grow overflow-y-auto custom-scroll divide-y divide-gray-800/70 font-mono text-gray-300 text-xs" id="col2List">
+                        <li class="p-6 text-center text-gray-600 italic font-sans" id="indEmpty2">Waiting for calculation...</li>
+                    </ul>
+                </div>
+                
+                <div class="bg-[#121214] rounded-xl border border-gray-700/80 overflow-hidden panel-glow flex flex-col h-[400px]">
+                    <div class="bg-[#18181b] p-3 px-5 border-b border-gray-700 text-yellow-500 font-bold uppercase tracking-widest text-[11px]" data-i18n="col3Title">
+                        <i class="fas fa-chart-line mr-2"></i> Costs & Income
+                    </div>
+                    <ul class="p-5 flex flex-col gap-3 font-mono text-xs text-gray-300" id="col3List">
+                        <li class="flex justify-between border-b border-gray-800/70 pb-2"><span data-i18n="matCost" class="text-gray-400">Material Cost:</span> <span>0 ISK</span></li>
+                        <li class="flex justify-between border-b border-gray-800/70 pb-2"><span data-i18n="statTax" class="text-gray-400">Tax & Fees:</span> <span class="text-yellow-600 text-right">0 ISK</span></li>
+                        <li class="flex justify-between mt-2"><span class="text-orange-400 font-bold uppercase" data-i18n="totCost">Total Cost:</span> <span class="text-orange-400 font-bold">0 ISK</span></li>
+                        <li class="flex justify-between"><span class="text-orange-400 font-bold uppercase" data-i18n="mktVal">Market Value:</span> <span class="text-orange-400 font-bold">0 ISK</span></li>
+                        <li class="flex justify-between mt-4 pt-4 border-t border-gray-700 border-dashed"><span data-i18n="prodTime" class="text-gray-400"><i class="fas fa-clock mr-1"></i> Est. Time:</span> <span id="timeOutput" class="text-sky-400 font-bold">0s</span></li>
+                    </ul>
+                    
+                    <div id="profitBox" class="mt-auto m-5 p-4 bg-gray-900/30 border border-gray-800/50 rounded-lg text-center">
+                        <span class="block text-[10px] text-gray-400 font-bold uppercase tracking-widest mb-1" data-i18n="estProfit">Estimated Profit</span>
+                        <span class="block text-2xl font-black text-gray-300 tracking-tighter" id="profitOutput">0 ISK</span>
+                        <span class="block text-[10px] text-gray-500 font-mono mt-1" id="marginOutput">( 0% Margin )</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
     </div>
 
-    <script>
-        // SŁOWNIK JĘZYKOWY
-        const i18n = {
-            pl: {
-                titleSub: "Skaner Wartości Rynkowej Inwentarza",
-                estValue: "Wartość Szacunkowa:",
-                copyBtn: "Skopiuj Raport",
-                copiedBtn: "SKOPIOWANO!",
-                chartTitle: "Struktura Wartości",
-                dataSource: "Źródło Danych:",
-                taxLabel: "Korekta (%):",
-                inputData: "Dane Wejściowe (Ctrl+V)",
-                placeholder: "Zaznacz inwentarz w EVE Online i wklej go tutaj...",
-                scanBtn: "Skanuj Inwentarz",
-                t1Title: "Rozpoznane na rynku",
-                t1Col1: "Przedmiot",
-                t1Col2: "Ilość",
-                t1Col3: "Cena Jedn.",
-                t1Col4: "Wartość",
-                t1Empty: "Czekam na skanowanie...",
-                t2Title: "Poza rynkiem / Limitowane",
-                t2Col3: "Status API",
-                t2Empty: "Brak przedmiotów specjalnych",
-                optGlobal: "Średnia ESI",
-                noApiData: "Brak Danych API",
-                otherItems: "Pozostałe przedmioty",
-                fetching: "Pobieranie Danych ESI...",
-                analyzing: "Analiza Rynku w toku...",
-                scanning: "Skanowanie Zleceń Regionalnych...",
-                noMarketItems: "Brak przedmiotów o płynnej wartości rynkowej.",
-                reportVal: "🧾 Wycena Loots:",
-                reportItems: "📦 Główne przedmioty:",
-                items: "poz."
-            },
-            en: {
-                titleSub: "Market Value Inventory Scanner",
-                estValue: "Estimated Value:",
-                copyBtn: "Copy Report",
-                copiedBtn: "COPIED!",
-                chartTitle: "Value Structure",
-                dataSource: "Data Source:",
-                taxLabel: "Margin / Tax (%):",
-                inputData: "Input Data (Ctrl+V)",
-                placeholder: "Select your inventory in EVE Online and paste it here...",
-                scanBtn: "Scan Inventory",
-                t1Title: "Market Recognized",
-                t1Col1: "Item",
-                t1Col2: "Quantity",
-                t1Col3: "Unit Price",
-                t1Col4: "Total Value",
-                t1Empty: "Waiting for scan...",
-                t2Title: "Off-market / Limited",
-                t2Col3: "API Status",
-                t2Empty: "No special items",
-                optGlobal: "ESI Average",
-                noApiData: "No API Data",
-                otherItems: "Other items",
-                fetching: "Fetching ESI Data...",
-                analyzing: "Market Analysis in progress...",
-                scanning: "Scanning Regional Orders...",
-                noMarketItems: "No liquid market items found.",
-                reportVal: "🧾 Loot Value:",
-                reportItems: "📦 Top items:",
-                items: "items"
-            }
-        };
+<script>
+    // ==========================================
+    // 1. WSPÓLNE LOGIKI (TABS & JĘZYK)
+    // ==========================================
+    function openTab(tabName) {
+        document.getElementById('content-loot').classList.add('hidden');
+        document.getElementById('content-industry').classList.add('hidden');
+        document.getElementById('tab-loot').classList.remove('active');
+        document.getElementById('tab-industry').classList.remove('active');
 
-        let currentLang = 'en'; 
-        let myChart = null;
-        let globalReportText = ""; 
+        document.getElementById('content-' + tabName).classList.remove('hidden');
+        document.getElementById('tab-' + tabName).classList.add('active');
+    }
 
-        Chart.defaults.color = '#71717a'; 
-        Chart.defaults.font.family = "'JetBrains Mono', monospace";
-
-        // FUNKCJA ZMIANY JĘZYKA
-        function switchLang(lang) {
-            currentLang = lang;
+    const globalI18n = {
+        en: {
+            titleSub: "Market Value Inventory Scanner", indSub: "Production Cost & Profit Calculator", estValue: "Estimated Value:", copyBtn: "Copy Report", copiedBtn: "COPIED!",
+            chartTitle: "Value Structure", dataSource: "Data Source:", lootTaxLabel: "Margin / Tax (%):", inputData: "Input Data (Ctrl+V)",
+            placeholder: "Select your inventory in EVE Online and paste it here...", scanBtn: "Scan Inventory", t1Title: "Market Recognized",
+            t1Col1: "Item", t1Col2: "Quantity", t1Col3: "Unit Price", t1Col4: "Total Value", t1Empty: "Waiting for calculation...",
+            t2Title: "Off-market / Limited", t2Col3: "API Status", t2Empty: "No special items", optGlobal: "ESI Average",
+            noApiData: "No API Data", otherItems: "Other items", fetching: "Fetching ESI Data...", analyzing: "Market Analysis in progress...",
+            scanning: "Scanning Regional Orders...", noMarketItems: "No liquid market items found.", reportVal: "🧾 Loot Value:",
+            reportItems: "📦 Top items:", items: "items",
             
-            // Styl flag
-            document.getElementById('lang-pl').className = lang === 'pl' ? 'text-2xl filter drop-shadow-[0_0_8px_rgba(255,255,255,0.6)] transition-all' : 'text-2xl filter grayscale opacity-40 hover:opacity-100 hover:grayscale-0 transition-all';
-            document.getElementById('lang-en').className = lang === 'en' ? 'text-2xl filter drop-shadow-[0_0_8px_rgba(255,255,255,0.6)] transition-all' : 'text-2xl filter grayscale opacity-40 hover:opacity-100 hover:grayscale-0 transition-all';
-
-            // Teksty statyczne
-            document.getElementById('titleSub').innerText = i18n[lang].titleSub;
-            document.getElementById('copyBtn').innerText = document.getElementById('copyBtn').innerText.includes("SKOPIOWANO") || document.getElementById('copyBtn').innerText.includes("COPIED") ? i18n[lang].copiedBtn : i18n[lang].copyBtn;
-            document.getElementById('chartTitle').innerText = i18n[lang].chartTitle;
-            document.getElementById('dataSourceLabel').innerText = i18n[lang].dataSource;
-            document.getElementById('optGlobal').innerText = i18n[lang].optGlobal;
-            document.getElementById('taxLabelText').innerText = i18n[lang].taxLabel;
-            document.getElementById('inputDataLabel').innerText = i18n[lang].inputData;
-            document.getElementById('invInput').placeholder = i18n[lang].placeholder;
-            if(!document.getElementById('calcBtn').disabled) document.getElementById('calcBtn').innerText = i18n[lang].scanBtn;
+            meLabel: "ME (Level):", teLabel: "TE (Level):", runsLabel: "Runs:", bpLabel: "Blueprint / Item:", stationLabel: "Solar System (SCI):",
+            indTaxLabel: "Facility Tax (%):", hubLabel: "Market (Hub):", priceLabel: "Est. Item Price:", calcBtn: "CALCULATE",
+            col1Title: '<i class="fas fa-cubes mr-2"></i> Base Materials', col2Title: '<i class="fas fa-bolt mr-2"></i> Editable Materials',
+            col3Title: '<i class="fas fa-chart-line mr-2"></i> Costs & Income', matCost: "Material Cost:", statTax: "Tax & Fees:",
+            totCost: "Total Cost:", mktVal: "Market Value:", estProfit: "ESTIMATED PROFIT", prodTime: '<i class="fas fa-clock mr-1"></i> Est. Time:'
+        },
+        pl: {
+            titleSub: "Skaner Wartości Rynkowej Inwentarza", indSub: "Kalkulator Kosztów i Zysku Produkcji", estValue: "Wartość Szacunkowa:", copyBtn: "Skopiuj Raport", copiedBtn: "SKOPIOWANO!",
+            chartTitle: "Struktura Wartości", dataSource: "Źródło Danych:", lootTaxLabel: "Korekta (%):", inputData: "Dane Wejściowe (Ctrl+V)",
+            placeholder: "Zaznacz inwentarz w EVE Online i wklej go tutaj...", scanBtn: "Skanuj Inwentarz", t1Title: "Rozpoznane na rynku",
+            t1Col1: "Przedmiot", t1Col2: "Ilość", t1Col3: "Cena Jedn.", t1Col4: "Wartość", t1Empty: "Czekam na dane...",
+            t2Title: "Poza rynkiem / Limitowane", t2Col3: "Status API", t2Empty: "Brak przedmiotów specjalnych", optGlobal: "Średnia ESI",
+            noApiData: "Brak Danych API", otherItems: "Pozostałe przedmioty", fetching: "Pobieranie Danych ESI...", analyzing: "Analiza Rynku w toku...",
+            scanning: "Skanowanie Zleceń...", noMarketItems: "Brak przedmiotów o płynnej wartości rynkowej.", reportVal: "🧾 Wycena Loots:",
+            reportItems: "📦 Główne przedmioty:", items: "poz.",
             
-            document.getElementById('t1Title').innerText = i18n[lang].t1Title;
-            document.getElementById('t1Col1').innerText = i18n[lang].t1Col1;
-            document.getElementById('t1Col2').innerText = i18n[lang].t1Col2;
-            document.getElementById('t1Col3').innerText = i18n[lang].t1Col3;
-            document.getElementById('t1Col4').innerText = i18n[lang].t1Col4;
-
-            document.getElementById('t2Title').innerText = i18n[lang].t2Title;
-            document.getElementById('t2Col1').innerText = i18n[lang].t1Col1;
-            document.getElementById('t2Col2').innerText = i18n[lang].t1Col2;
-            document.getElementById('t2Col3').innerText = i18n[lang].t2Col3;
-
-            // Teksty dynamiczne / Puste tabele
-            let taxRate = parseFloat(document.getElementById('taxRate').value);
-            if(isNaN(taxRate) || taxRate < 0) taxRate = 0;
-            const netLabel = document.getElementById('netLabel');
-            if(taxRate > 0) {
-                netLabel.innerText = `${i18n[lang].estValue.replace(':', '')} (-${taxRate}%):`;
-            } else {
-                netLabel.innerText = i18n[lang].estValue;
-            }
-
-            const el1 = document.getElementById('t1Empty');
-            if(el1) el1.innerText = i18n[lang].t1Empty;
-            const el2 = document.getElementById('t2Empty');
-            if(el2) el2.innerText = i18n[lang].t2Empty;
-
-            // Liczniki
-            const vCount = document.getElementById('valuedCount').innerText;
-            document.getElementById('valuedCount').innerText = vCount.replace('poz.', i18n[lang].items).replace('items', i18n[lang].items);
-            const zCount = document.getElementById('zeroCount').innerText;
-            document.getElementById('zeroCount').innerText = zCount.replace('poz.', i18n[lang].items).replace('items', i18n[lang].items);
+            meLabel: "ME (Level):", teLabel: "TE (Level):", runsLabel: "Ilość (Runs):", bpLabel: "Nazwa Przedmiotu:", stationLabel: "System (Wskaźnik SCI):",
+            indTaxLabel: "Podatek Stacji (%):", hubLabel: "Rynek (Hub):", priceLabel: "Szac. Cena Rynkowa:", calcBtn: "OBLICZ KOSZTY",
+            col1Title: '<i class="fas fa-cubes mr-2"></i> Baza Materiałowa', col2Title: '<i class="fas fa-bolt mr-2"></i> Własne Ceny (Edycja)',
+            col3Title: '<i class="fas fa-chart-line mr-2"></i> Koszty i Zysk', matCost: "Koszt Materiałów:", statTax: "Podatki (SCI + Stacja):",
+            totCost: "Całkowity Koszt:", mktVal: "Wartość Rynkowa:", estProfit: "SZACOWANY ZYSK", prodTime: '<i class="fas fa-clock mr-1"></i> Czas:'
         }
+    };
+    
+    let currentLang = 'en';
 
-        // WYKRYWANIE JĘZYKA PRZY STARCIE
-        document.addEventListener('DOMContentLoaded', () => {
-            const browserLang = navigator.language || navigator.userLanguage;
-            switchLang(browserLang.startsWith('pl') ? 'pl' : 'en');
+    function setGlobalLanguage(lang) {
+        currentLang = lang;
+        const d = globalI18n[lang];
+
+        document.getElementById('lang-pl').className = lang === 'pl' ? 'text-2xl transition-all cursor-pointer filter drop-shadow-[0_0_8px_rgba(255,255,255,0.6)]' : 'text-2xl transition-all cursor-pointer filter grayscale opacity-40 hover:opacity-100 hover:grayscale-0';
+        document.getElementById('lang-en').className = lang === 'en' ? 'text-2xl transition-all cursor-pointer filter drop-shadow-[0_0_8px_rgba(255,255,255,0.6)]' : 'text-2xl transition-all cursor-pointer filter grayscale opacity-40 hover:opacity-100 hover:grayscale-0';
+
+        document.getElementById('titleSub').innerText = d.titleSub;
+        if(document.getElementById('indSub')) document.getElementById('indSub').innerText = d.indSub;
+        document.getElementById('copyBtn').innerText = document.getElementById('copyBtn').innerText.includes("SKOPIOWANO") || document.getElementById('copyBtn').innerText.includes("COPIED") ? d.copiedBtn : d.copyBtn;
+        document.getElementById('chartTitle').innerText = d.chartTitle;
+        document.getElementById('dataSourceLabel').innerText = d.dataSource;
+        document.getElementById('optGlobal').innerText = d.optGlobal;
+        document.getElementById('lootTaxLabelText').innerText = d.lootTaxLabel;
+        document.getElementById('inputDataLabel').innerText = d.inputData;
+        document.getElementById('invInput').placeholder = d.placeholder;
+        if(!document.getElementById('scanBtn').disabled) document.getElementById('scanBtn').innerText = d.scanBtn;
+        
+        document.getElementById('t1Title').innerText = d.t1Title;
+        document.getElementById('t1Col1').innerText = d.t1Col1;
+        document.getElementById('t1Col2').innerText = d.t1Col2;
+        document.getElementById('t1Col3').innerText = d.t1Col3;
+        document.getElementById('t1Col4').innerText = d.t1Col4;
+        document.getElementById('t2Title').innerText = d.t2Title;
+        document.getElementById('t2Col1').innerText = d.t2Col1;
+        document.getElementById('t2Col2').innerText = d.t2Col2;
+        document.getElementById('t2Col3').innerText = d.t2Col3;
+
+        let taxRate = parseFloat(document.getElementById('lootTaxRate').value) || 0;
+        document.getElementById('netLabel').innerText = taxRate > 0 ? `${d.estValue.replace(':', '')} (-${taxRate}%):` : d.estValue;
+        
+        if(document.getElementById('t1Empty')) document.getElementById('t1Empty').innerText = d.t1Empty;
+        if(document.getElementById('t2Empty')) document.getElementById('t2Empty').innerText = d.t2Empty;
+        if(document.getElementById('indEmpty1')) document.getElementById('indEmpty1').innerText = d.t1Empty;
+        if(document.getElementById('indEmpty2')) document.getElementById('indEmpty2').innerText = d.t1Empty;
+
+        const vCount = document.getElementById('valuedCount').innerText.replace(/\D/g,'');
+        document.getElementById('valuedCount').innerText = `${vCount} ${d.items}`;
+        const zCount = document.getElementById('zeroCount').innerText.replace(/\D/g,'');
+        document.getElementById('zeroCount').innerText = `${zCount} ${d.items}`;
+
+        document.querySelectorAll('[data-i18n]').forEach(el => {
+            if(d[el.getAttribute('data-i18n')]) el.innerHTML = d[el.getAttribute('data-i18n')];
+        });
+        if(appState.materials.length > 0) renderTables();
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const browserLang = navigator.language || navigator.userLanguage;
+        setGlobalLanguage(browserLang.startsWith('pl') ? 'pl' : 'en');
+        loadIndustryDatabase();
+    });
+
+    // ==========================================
+    // 2. LOGIKA LOOT ANALYZER
+    // ==========================================
+    let myChart = null;
+    let globalReportText = ""; 
+    Chart.defaults.color = '#71717a'; 
+    Chart.defaults.font.family = "'JetBrains Mono', monospace";
+
+    async function runProcessor() {
+        const btn = document.getElementById('scanBtn');
+        const copyBtn = document.getElementById('copyBtn');
+        const validTable = document.getElementById('validTable');
+        const zeroTable = document.getElementById('zeroTable');
+        const finalNet = document.getElementById('finalNet');
+        const netLabel = document.getElementById('netLabel');
+        
+        const regionId = document.getElementById('marketRegion').value;
+        let taxRate = parseFloat(document.getElementById('lootTaxRate').value);
+        if(isNaN(taxRate) || taxRate < 0) taxRate = 0;
+        
+        const rawInput = document.getElementById('invInput').value.trim();
+        if (!rawInput) return;
+
+        btn.disabled = true;
+        copyBtn.classList.add('hidden');
+        btn.innerHTML = `<span class='animate-pulse'>${globalI18n[currentLang].fetching}</span>`;
+        validTable.innerHTML = `<tr><td colspan='4' class='p-10 text-center text-yellow-400 animate-pulse font-sans'>${globalI18n[currentLang].analyzing}</td></tr>`;
+        zeroTable.innerHTML = "";
+
+        try {
+            const lines = rawInput.split('\n').filter(l => l.trim() !== "");
+            const inventoryMap = {};
+
+            lines.forEach(line => {
+                let name = "";
+                let qty = 1;
+                if (line.includes('\t')) {
+                    const parts = line.split('\t');
+                    name = parts[0].trim();
+                    qty = parseInt(parts[1].replace(/\D/g, '')) || 1; 
+                } else {
+                    const match = line.trim().match(/^(.*?)\s+([\d\s]+)$/);
+                    if (match) {
+                        name = match[1].trim();
+                        qty = parseInt(match[2].replace(/\D/g, '')) || 1;
+                    } else {
+                        name = line.trim();
+                    }
+                }
+                if (name) inventoryMap[name] = (inventoryMap[name] || 0) + qty;
+            });
+
+            const uniqueNames = Object.keys(inventoryMap);
+            const idRes = await fetch('https://esi.evetech.net/latest/universe/ids/', {
+                method: 'POST', headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                body: JSON.stringify(uniqueNames)
+            });
+            if (!idRes.ok) throw new Error("ESI Error (Universe API)");
+            const idData = await idRes.json();
+            
+            const foundItems = idData.inventory_types || idData.inventory || [];
+            if (foundItems.length === 0) throw new Error(currentLang === 'pl' ? "ESI nie rozpoznało żadnej nazwy." : "ESI did not recognize any names.");
+
+            const prices = {};
+
+            if (regionId === 'global') {
+                const priceRes = await fetch('https://esi.evetech.net/latest/markets/prices/');
+                if (!priceRes.ok) throw new Error("ESI Error (Markets API)");
+                const priceData = await priceRes.json();
+                priceData.forEach(p => prices[p.type_id] = p.adjusted_price || 0);
+            } else {
+                validTable.innerHTML = `<tr><td colspan='4' class='p-10 text-center text-yellow-400 animate-pulse font-sans'>${globalI18n[currentLang].scanning}</td></tr>`;
+                const fetchRegionalPrice = async (item) => {
+                    try {
+                        const res = await fetch(`https://esi.evetech.net/latest/markets/${regionId}/orders/?datasource=tranquility&order_type=buy&type_id=${item.id}`);
+                        if (!res.ok) return { id: item.id, price: 0 };
+                        const orders = await res.json();
+                        const maxBuy = orders.length > 0 ? Math.max(...orders.map(o => o.price)) : 0;
+                        return { id: item.id, price: maxBuy };
+                    } catch (e) { return { id: item.id, price: 0 }; }
+                };
+                const pricePromises = foundItems.map(item => fetchRegionalPrice(item));
+                const priceResults = await Promise.all(pricePromises);
+                priceResults.forEach(p => prices[p.id] = p.price);
+            }
+
+            validTable.innerHTML = "";
+            let totalValue = 0, validItemsCount = 0, zeroItemsCount = 0;
+            let chartData = [];
+            const fallbackImg = "onerror=\"this.onerror=null; this.src='https://images.evetech.net/types/23/icon?size=32';\"";
+
+            foundItems.forEach(item => {
+                const qty = inventoryMap[item.name];
+                const price = prices[item.id] || 0;
+                const subtotal = price * qty;
+
+                if (price > 0) {
+                    totalValue += subtotal; validItemsCount++; chartData.push({ name: item.name, value: subtotal });
+                    validTable.innerHTML += `
+                        <tr class="hover:bg-[#18181b] transition-colors">
+                            <td class="px-5 py-3 flex items-center gap-3">
+                                <img src="https://images.evetech.net/types/${item.id}/icon?size=32" class="w-6 h-6 rounded border border-gray-700 shrink-0" ${fallbackImg}>
+                                <span class="text-gray-100 truncate max-w-[150px] md:max-w-[200px]" title="${item.name}">${item.name}</span>
+                            </td>
+                            <td class="px-5 py-3 text-right text-yellow-500">${qty.toLocaleString()}</td>
+                            <td class="px-5 py-3 text-right text-gray-400">${Math.floor(price).toLocaleString()}</td>
+                            <td class="px-5 py-3 text-right font-bold text-white">${Math.floor(subtotal).toLocaleString()}</td>
+                        </tr>`;
+                } else {
+                    zeroItemsCount++;
+                    zeroTable.innerHTML += `
+                        <tr class="hover:bg-orange-950/20 transition-colors">
+                            <td class="px-5 py-3 flex items-center gap-3">
+                                <img src="https://images.evetech.net/types/${item.id}/icon?size=32" class="w-6 h-6 rounded border border-orange-800/40 opacity-80 shrink-0" ${fallbackImg}>
+                                <span class="text-orange-200/90 truncate max-w-[150px] md:max-w-[200px]" title="${item.name}">${item.name}</span>
+                            </td>
+                            <td class="px-5 py-3 text-right text-yellow-600/60">${qty.toLocaleString()}</td>
+                            <td class="px-5 py-3 text-right text-orange-500/80 text-[10px] uppercase tracking-wider font-bold">${globalI18n[currentLang].noApiData}</td>
+                        </tr>`;
+                }
+            });
+
+            if(validItemsCount === 0) validTable.innerHTML = `<tr><td colspan='4' class='p-10 text-center font-sans text-gray-400'>${globalI18n[currentLang].noMarketItems}</td></tr>`;
+            if(zeroItemsCount === 0) zeroTable.innerHTML = `<tr><td colspan='3' class='p-6 text-center font-sans text-orange-700/60'>${globalI18n[currentLang].t2Empty}</td></tr>`;
+
+            document.getElementById('valuedCount').innerText = `${validItemsCount} ${globalI18n[currentLang].items}`;
+            document.getElementById('zeroCount').innerText = `${zeroItemsCount} ${globalI18n[currentLang].items}`;
+
+            const finalISK = Math.floor(totalValue * (1 - (taxRate / 100)));
+            netLabel.innerText = taxRate > 0 ? `${globalI18n[currentLang].estValue.replace(':', '')} (-${taxRate}%):` : globalI18n[currentLang].estValue;
+            finalNet.innerHTML = `${finalISK.toLocaleString()} <span class="text-sm text-green-500">ISK</span>`;
+
+            renderChart(chartData);
+
+            if (validItemsCount > 0) {
+                chartData.sort((a, b) => b.value - a.value);
+                const topItems = chartData.slice(0, 3).map(item => item.name).join(', ');
+                globalReportText = `${globalI18n[currentLang].reportVal} ${finalISK.toLocaleString()} ISK\n${globalI18n[currentLang].reportItems} ${topItems}`;
+                copyBtn.classList.remove('hidden'); 
+            }
+        } catch (err) {
+            validTable.innerHTML = `<tr><td colspan='4' class='p-10 text-center text-red-400 font-sans font-bold'>BŁĄD: ${err.message}</td></tr>`;
+        } finally {
+            btn.disabled = false; btn.innerText = globalI18n[currentLang].scanBtn;
+        }
+    }
+
+    function copyReport() {
+        if (!globalReportText) return;
+        navigator.clipboard.writeText(globalReportText).then(() => {
+            const btn = document.getElementById('copyBtn');
+            const originalText = btn.innerText;
+            btn.innerText = globalI18n[currentLang].copiedBtn;
+            btn.classList.add('text-green-400', 'border-green-500', 'bg-green-900/20');
+            setTimeout(() => { btn.innerText = originalText; btn.classList.remove('text-green-400', 'border-green-500', 'bg-green-900/20'); }, 2000);
+        });
+    }
+
+    function renderChart(data) {
+        const ctx = document.getElementById('valueChart').getContext('2d');
+        document.getElementById('chartContainer').classList.remove('hidden');
+        document.getElementById('chartContainer').classList.add('flex');
+        data.sort((a, b) => b.value - a.value);
+        let labels = [], values = [], otherValue = 0;
+        for (let i = 0; i < data.length; i++) {
+            if (i < 5) { labels.push(data[i].name); values.push(data[i].value); } else { otherValue += data[i].value; }
+        }
+        if (otherValue > 0) { labels.push(globalI18n[currentLang].otherItems); values.push(otherValue); }
+        if (myChart) myChart.destroy();
+
+        myChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: { labels: labels, datasets: [{ data: values, backgroundColor: ['#eab308', '#ca8a04', '#a16207', '#52525b', '#3f3f46', '#27272a'], borderWidth: 2, borderColor: '#121214' }] },
+            options: { responsive: true, maintainAspectRatio: false, layout: { padding: { bottom: 10, top: 10 } },
+                plugins: {
+                    legend: { display: true, position: 'bottom', labels: { color: '#a1a1aa', font: { family: "'JetBrains Mono', monospace", size: 9 }, boxWidth: 10, padding: 15 } },
+                    tooltip: { backgroundColor: '#18181b', titleFont: { family: "'Inter', sans-serif" }, bodyFont: { family: "'JetBrains Mono', monospace" }, padding: 10, callbacks: { label: function(context) { return " " + Math.floor(context.raw).toLocaleString() + " ISK"; } } }
+                }, cutout: '65%' 
+            }
+        });
+    }
+
+    // ==========================================
+    // 3. LOGIKA INDUSTRY CALCULATOR
+    // ==========================================
+    let eveItemsDatabase = [
+        "Vexor", "Thorax", "Megathron", "Dominix", "Raven", "Caracal", "Drake", "Tengu", "Paladin", "Golem", "Kronos", "Vargur", "Ishtar", "Gila", "Orthrus", "Machariel",
+        "Hobgoblin I", "Hobgoblin II", "Hammerhead I", "Hammerhead II", "Ogre I", "Ogre II", 
+        "Hornet I", "Hornet II", "Vespa I", "Vespa II", "Wasp I", "Wasp II",
+        "Acolyte I", "Acolyte II", "Infiltrator I", "Infiltrator II", "Praetor I", "Praetor II",
+        "Warrior I", "Warrior II", "Valkyrie I", "Valkyrie II", "Berserker I", "Berserker II",
+        "Scourge Heavy Missile", "Scourge Fury Heavy Missile", "Inferno Heavy Missile", "Nova Heavy Missile", "Mjolnir Heavy Missile",
+        "Tritanium", "Pyerite", "Mexallon", "Isogen", "Nocxium", "Zydrine", "Megacyte", "Morphite",
+        "Damage Control I", "Damage Control II", "Warp Scrambler I", "Warp Scrambler II", "Multispectrum Energized Membrane II",
+        "Hobgoblin I Blueprint", "R.A.M.- Robotics"
+    ]; 
+    let popularSystems = ["Jita", "Amarr", "Perimeter", "Dodixie", "Rens", "Hek", "Tash-Murkon Prime", "Ashab", "Oursulaert", "New Caldari", "Sobaseki", "Tama"];
+
+    function loadIndustryDatabase() {
+        document.getElementById('dbStatus').innerHTML = '<i class="fas fa-spinner fa-spin"></i> Ładowanie bazy...';
+        fetch('typeids.csv').then(res => res.text()).then(text => {
+            const lines = text.split('\n');
+            let items = [];
+            for(let i = 1; i < lines.length; i++) {
+                let line = lines[i].trim();
+                if(!line) continue;
+                let parts = line.split('","');
+                if(parts.length >= 2) {
+                    items.push(parts[1]); 
+                }
+            }
+            if(items.length > 1000) {
+                eveItemsDatabase = items; 
+                document.getElementById('dbStatus').innerHTML = '<i class="fas fa-check text-green-500"></i> Baza Gotowa';
+                setTimeout(() => document.getElementById('dbStatus').innerHTML = '', 3000);
+            }
+        }).catch(err => { 
+            document.getElementById('dbStatus').innerHTML = '<i class="fas fa-exclamation-triangle text-yellow-500"></i> Baza awaryjna'; 
+        });
+    }
+
+    let typingTimer;
+    function localAutocomplete(query, type, inputId) {
+        closeAllLists();
+        if (query.length < 2) return; 
+        
+        const lowerQuery = query.toLowerCase();
+        let matches = type === 'item' ? 
+            eveItemsDatabase.filter(item => {
+                let lItem = item.toLowerCase();
+                return lItem.startsWith(lowerQuery) || lItem.includes(' ' + lowerQuery) || lItem.includes('-' + lowerQuery);
+            }).slice(0, 100) : 
+            popularSystems.filter(sys => {
+                let lSys = sys.toLowerCase();
+                return lSys.startsWith(lowerQuery) || lSys.includes(' ' + lowerQuery);
+            }).slice(0, 15);
+
+        if (matches.length === 0) return;
+
+        const inputElement = document.getElementById(inputId);
+        const a = document.createElement("div");
+        a.setAttribute("id", inputId + "autocomplete-list");
+        a.setAttribute("class", "autocomplete-items");
+        inputElement.parentNode.appendChild(a);
+
+        matches.forEach(name => {
+            const b = document.createElement("div");
+            const regex = new RegExp(`(^|\\s|-)(${query})`, "gi");
+            b.innerHTML = name.replace(regex, "$1<strong>$2</strong>");
+            b.addEventListener("click", function(e) {
+                inputElement.value = name;
+                closeAllLists();
+            });
+            a.appendChild(b);
+        });
+    }
+
+    function closeAllLists(elmnt) {
+        var x = document.getElementsByClassName("autocomplete-items");
+        for (var i = 0; i < x.length; i++) {
+            if (elmnt != x[i] && elmnt != document.getElementById('bpInput') && elmnt != document.getElementById('systemInput')) {
+                x[i].parentNode.removeChild(x[i]);
+            }
+        }
+    }
+
+    document.getElementById('bpInput').addEventListener('input', function(e) { localAutocomplete(this.value.trim(), 'item', 'bpInput'); });
+    document.getElementById('systemInput').addEventListener('input', function(e) { localAutocomplete(this.value.trim(), 'system', 'systemInput'); });
+    document.addEventListener("click", function (e) { closeAllLists(e.target); });
+
+    let appState = { materials: [], runs: 1, me: 10, te: 20, sciPercentage: 0, facilityTax: 0, productSellPrice: 0, baseTime: 0 };
+
+    function formatTime(totalSeconds) {
+        const d = Math.floor(totalSeconds / (3600*24));
+        const h = Math.floor(totalSeconds % (3600*24) / 3600);
+        const m = Math.floor(totalSeconds % 3600 / 60);
+        const s = Math.floor(totalSeconds % 60);
+        let parts = [];
+        if(d>0) parts.push(d+"d");
+        if(h>0) parts.push(h+"h");
+        if(m>0) parts.push(m+"m");
+        if(s>0 || parts.length===0) parts.push(s+"s");
+        return parts.join(' ');
+    }
+
+    async function fetchIndustryData() {
+        let itemName = document.getElementById('bpInput').value.trim();
+        itemName = itemName.replace(/\s+1$/, ' I').replace(/\s+2$/, ' II').replace(/\s+3$/, ' III').replace(/\s+4$/, ' IV').replace(/\s+5$/, ' V');
+        document.getElementById('bpInput').value = itemName;
+
+        const systemName = document.getElementById('systemInput').value.trim() || 'Jita';
+        appState.me = parseInt(document.getElementById('meInput').value) || 0;
+        appState.te = parseInt(document.getElementById('teInput').value) || 0;
+        appState.runs = parseInt(document.getElementById('runsInput').value) || 1;
+        appState.facilityTax = parseFloat(document.getElementById('taxInput').value) || 0;
+        const stationId = document.getElementById('marketHub').value;
+
+        if(!itemName) return alert("Wpisz nazwę przedmiotu!");
+
+        document.getElementById('col1List').innerHTML = `<li class="p-6 text-center text-yellow-500 animate-pulse font-sans w-full">${globalI18n[currentLang].fetching}</li>`;
+        document.getElementById('col2List').innerHTML = `<li class="p-6 text-center text-yellow-500 animate-pulse font-sans w-full">${globalI18n[currentLang].analyzing}</li>`;
+        
+        try {
+            const searchRes = await fetch(`https://www.fuzzwork.co.uk/api/typeid.php?typename=${encodeURIComponent(itemName)}`);
+            if (!searchRes.ok) throw new Error(`Błąd wyszukiwania: ${searchRes.status}`);
+            const searchData = await searchRes.json();
+            if (searchData.typeID === 0) throw new Error(`Nie znaleziono przedmiotu "${itemName}".`);
+            const typeId = searchData.typeID;
+
+            const sysIdRes = await fetch('https://esi.evetech.net/latest/universe/ids/', { method: 'POST', body: JSON.stringify([systemName]) });
+            const sysIdData = await sysIdRes.json();
+            if (!sysIdData.systems) throw new Error(`Nie znaleziono układu "${systemName}".`);
+            const solarSystemId = sysIdData.systems[0].id;
+
+            const sciRes = await fetch('https://esi.evetech.net/latest/industry/systems/');
+            const sciData = await sciRes.json();
+            const systemSci = sciData.find(s => s.solar_system_id === solarSystemId);
+            appState.sciPercentage = 0;
+            if (systemSci) {
+                const manufacturing = systemSci.cost_indices.find(c => c.activity === 'manufacturing');
+                if (manufacturing) appState.sciPercentage = manufacturing.cost_index * 100;
+            }
+
+            // --- PODWÓJNY SPADOCHRON NA OBRAZKI (Statki -> Materiały -> Blueprinty) ---
+            const mainImg = document.getElementById('mainIcon');
+            mainImg.src = `https://images.evetech.net/types/${typeId}/render?size=256`;
+            
+            mainImg.onerror = function() {
+                // 2. Jeśli nie ma 3D, próbujemy płaskiej Ikony (Komponenty, R.A.M., Surowce)
+                this.onerror = function() {
+                    // 3. Jeśli Ikona też nie działa, to znaczy, że to Blueprint! Ładujemy grafikę /bp
+                    this.onerror = null; 
+                    this.src = `https://images.evetech.net/types/${typeId}/bp?size=256`;
+                };
+                this.src = `https://images.evetech.net/types/${typeId}/icon?size=256`;
+            };
+
+            const bpRes = await fetch(`https://www.fuzzwork.co.uk/blueprint/api/blueprint.php?typeid=${typeId}`);
+            const bpData = await bpRes.json();
+            if(!bpData.activityMaterials || !bpData.activityMaterials[1]) throw new Error("Brak receptury produkcyjnej.");
+            
+            appState.baseTime = bpData.blueprintDetails.times[1] || 0;
+            const baseMaterials = bpData.activityMaterials[1];
+
+            let typesToFetch = baseMaterials.map(m => m.typeid);
+            typesToFetch.push(typeId);
+            const priceRes = await fetch(`https://market.fuzzwork.co.uk/aggregates/?station=${stationId}&types=${typesToFetch.join(',')}`);
+            const priceData = await priceRes.json();
+            
+            appState.productSellPrice = parseFloat(priceData[typeId].sell.min) || 0;
+            document.getElementById('itemPriceOutput').innerText = appState.productSellPrice.toLocaleString() + " ISK";
+
+            appState.materials = baseMaterials.map(mat => {
+                return { id: mat.typeid, name: mat.name, baseQty: mat.quantity, unitPrice: parseFloat(priceData[mat.typeid].sell.min) || 0 };
+            });
+
+            renderTables();
+        } catch (error) {
+            document.getElementById('col1List').innerHTML = `<li class="p-6 text-center text-red-500 font-sans w-full">BŁĄD: ${error.message}</li>`;
+            document.getElementById('col2List').innerHTML = "";
+        }
+    }
+
+    function updateCustomPrice(index, newValue) {
+        let parsedVal = parseFloat(newValue);
+        if (isNaN(parsedVal) || parsedVal < 0) parsedVal = 0; 
+        appState.materials[index].unitPrice = parsedVal;
+        renderTables(); 
+    }
+
+    function updateMathLive() {
+        if(appState.materials.length === 0) return; 
+        appState.me = parseInt(document.getElementById('meInput').value) || 0;
+        appState.te = parseInt(document.getElementById('teInput').value) || 0;
+        appState.runs = parseInt(document.getElementById('runsInput').value) || 1;
+        appState.facilityTax = parseFloat(document.getElementById('taxInput').value) || 0;
+        renderTables(); 
+    }
+
+    function renderTables() {
+        let col1Html = "", col2Html = "", totalMatCost = 0;
+        appState.materials.forEach((mat, index) => {
+            const baseQty = mat.baseQty * appState.runs;
+            const effQty = Math.max(appState.runs, Math.ceil(mat.baseQty * (1 - (appState.me / 100))) * appState.runs);
+            
+            totalMatCost += (effQty * mat.unitPrice);
+
+            col1Html += `
+            <li class="px-5 py-2.5 flex items-center justify-between hover:bg-[#18181b] transition-colors">
+                <div class="flex items-center gap-3 overflow-hidden">
+                    <img src="https://images.evetech.net/types/${mat.id}/icon?size=32" onerror="this.src='https://images.evetech.net/types/34/icon?size=32'" class="w-6 h-6 rounded border border-gray-700 shrink-0">
+                    <span class="truncate max-w-[140px] text-gray-200" title="${mat.name}">${mat.name}</span>
+                </div>
+                <span class="text-yellow-500 ml-2">${baseQty.toLocaleString()}</span>
+            </li>`;
+
+            col2Html += `
+            <li class="px-5 py-2.5 flex items-center justify-between hover:bg-[#18181b] transition-colors">
+                <div class="flex items-center gap-3 overflow-hidden flex-1">
+                    <img src="https://images.evetech.net/types/${mat.id}/icon?size=32" onerror="this.src='https://images.evetech.net/types/34/icon?size=32'" class="w-6 h-6 rounded border border-gray-700 shrink-0">
+                    <span class="truncate max-w-[100px] text-gray-200" title="${mat.name}">${mat.name}</span>
+                </div>
+                <div class="flex items-center gap-3">
+                    <div class="flex items-center bg-[#09090b] border border-gray-600 rounded px-2 py-1 focus-within:border-yellow-500 transition-colors">
+                        <input type="number" value="${mat.unitPrice.toFixed(2)}" step="0.01" onchange="updateCustomPrice(${index}, this.value)" class="w-16 bg-transparent border-none outline-none text-yellow-500 text-right text-xs font-mono">
+                        <span class="text-gray-500 text-[9px] ml-1">ISK</span>
+                    </div>
+                    <span class="text-green-400 font-bold w-12 text-right">${effQty.toLocaleString()}</span>
+                </div>
+            </li>`;
         });
 
-        // GŁÓWNY PROCESOR
-        async function runProcessor() {
-            const btn = document.getElementById('calcBtn');
-            const copyBtn = document.getElementById('copyBtn');
-            const validTable = document.getElementById('validTable');
-            const zeroTable = document.getElementById('zeroTable');
-            const finalNet = document.getElementById('finalNet');
-            const netLabel = document.getElementById('netLabel');
-            
-            const regionId = document.getElementById('marketRegion').value;
-            let taxRate = parseFloat(document.getElementById('taxRate').value);
-            if(isNaN(taxRate) || taxRate < 0) taxRate = 0;
-            
-            const rawInput = document.getElementById('invInput').value.trim();
+        document.getElementById('col1List').innerHTML = col1Html;
+        document.getElementById('col2List').innerHTML = col2Html;
 
-            if (!rawInput) return;
+        let totalSeconds = appState.baseTime * (1 - (appState.te / 100)) * appState.runs;
 
-            btn.disabled = true;
-            copyBtn.classList.add('hidden');
-            btn.innerHTML = `<span class='animate-pulse'>${i18n[currentLang].fetching}</span>`;
-            validTable.innerHTML = `<tr><td colspan='4' class='p-10 text-center text-yellow-400 animate-pulse font-sans'>${i18n[currentLang].analyzing}</td></tr>`;
-            zeroTable.innerHTML = "";
+        const totalTaxRate = appState.sciPercentage + appState.facilityTax; 
+        const taxCost = totalMatCost * (totalTaxRate / 100);
+        const totalCost = totalMatCost + taxCost;
+        const marketValue = appState.productSellPrice * appState.runs;
+        const profit = marketValue - totalCost;
+        const margin = totalCost > 0 ? (profit / totalCost) * 100 : 0;
 
-            try {
-                const lines = rawInput.split('\n').filter(l => l.trim() !== "");
-                const inventoryMap = {};
+        document.getElementById('col3List').innerHTML = `
+            <li class="flex justify-between border-b border-gray-800/70 pb-2"><span data-i18n="matCost" class="text-gray-400">${globalI18n[currentLang].matCost}</span> <span>${totalMatCost.toLocaleString('en-US', {maximumFractionDigits: 0})} ISK</span></li>
+            <li class="flex justify-between border-b border-gray-800/70 pb-2"><span data-i18n="statTax" class="text-gray-400">${globalI18n[currentLang].statTax}</span> <span class="text-yellow-600 text-right leading-tight">${taxCost.toLocaleString('en-US', {maximumFractionDigits: 0})} ISK<br><span class="text-[9px] text-gray-500">(${appState.sciPercentage.toFixed(2)}% SCI + ${appState.facilityTax}% Tax)</span></span></li>
+            <li class="flex justify-between mt-2"><span class="text-orange-400 font-bold uppercase" data-i18n="totCost">${globalI18n[currentLang].totCost}</span> <span class="text-orange-400 font-bold">${totalCost.toLocaleString('en-US', {maximumFractionDigits: 0})} ISK</span></li>
+            <li class="flex justify-between"><span class="text-orange-400 font-bold uppercase" data-i18n="mktVal">${globalI18n[currentLang].mktVal}</span> <span class="text-orange-400 font-bold">${marketValue.toLocaleString('en-US', {maximumFractionDigits: 0})} ISK</span></li>
+            <li class="flex justify-between mt-4 pt-4 border-t border-gray-700 border-dashed"><span data-i18n="prodTime" class="text-gray-400">${globalI18n[currentLang].prodTime}</span> <span id="timeOutput" class="text-sky-400 font-bold">${formatTime(totalSeconds)}</span></li>`;
 
-                lines.forEach(line => {
-                    let name = "";
-                    let qty = 1;
-                    if (line.includes('\t')) {
-                        const parts = line.split('\t');
-                        name = parts[0].trim();
-                        qty = parseInt(parts[1].replace(/\D/g, '')) || 1; 
-                    } else {
-                        const match = line.trim().match(/^(.*?)\s+([\d\s]+)$/);
-                        if (match) {
-                            name = match[1].trim();
-                            qty = parseInt(match[2].replace(/\D/g, '')) || 1;
-                        } else {
-                            name = line.trim();
-                        }
-                    }
-                    if (name) inventoryMap[name] = (inventoryMap[name] || 0) + qty;
-                });
-
-                const uniqueNames = Object.keys(inventoryMap);
-
-                const idRes = await fetch('https://esi.evetech.net/latest/universe/ids/', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-                    body: JSON.stringify(uniqueNames)
-                });
-                if (!idRes.ok) throw new Error(currentLang === 'pl' ? "Błąd ESI (Universe API)" : "ESI Error (Universe API)");
-                const idData = await idRes.json();
-                
-                const foundItems = idData.inventory_types || idData.inventory || [];
-                if (foundItems.length === 0) throw new Error(currentLang === 'pl' ? "ESI nie rozpoznało żadnej nazwy." : "ESI did not recognize any names.");
-
-                const prices = {};
-
-                if (regionId === 'global') {
-                    const priceRes = await fetch('https://esi.evetech.net/latest/markets/prices/');
-                    if (!priceRes.ok) throw new Error(currentLang === 'pl' ? "Błąd ESI (Markets API)" : "ESI Error (Markets API)");
-                    const priceData = await priceRes.json();
-                    priceData.forEach(p => prices[p.type_id] = p.adjusted_price || 0);
-                } else {
-                    validTable.innerHTML = `<tr><td colspan='4' class='p-10 text-center text-yellow-400 animate-pulse font-sans'>${i18n[currentLang].scanning}</td></tr>`;
-                    const fetchRegionalPrice = async (item) => {
-                        try {
-                            const res = await fetch(`https://esi.evetech.net/latest/markets/${regionId}/orders/?datasource=tranquility&order_type=buy&type_id=${item.id}`);
-                            if (!res.ok) return { id: item.id, price: 0 };
-                            const orders = await res.json();
-                            const maxBuy = orders.length > 0 ? Math.max(...orders.map(o => o.price)) : 0;
-                            return { id: item.id, price: maxBuy };
-                        } catch (e) {
-                            return { id: item.id, price: 0 };
-                        }
-                    };
-                    const pricePromises = foundItems.map(item => fetchRegionalPrice(item));
-                    const priceResults = await Promise.all(pricePromises);
-                    priceResults.forEach(p => prices[p.id] = p.price);
-                }
-
-                validTable.innerHTML = "";
-                let totalValue = 0;
-                let validItemsCount = 0;
-                let zeroItemsCount = 0;
-                let chartData = [];
-                const fallbackImg = "onerror=\"this.onerror=null; this.src='https://images.evetech.net/types/23/icon?size=32';\"";
-
-                foundItems.forEach(item => {
-                    const qty = inventoryMap[item.name];
-                    const price = prices[item.id] || 0;
-                    const subtotal = price * qty;
-
-                    if (price > 0) {
-                        totalValue += subtotal;
-                        validItemsCount++;
-                        chartData.push({ name: item.name, value: subtotal });
-
-                        validTable.innerHTML += `
-                            <tr class="hover:bg-[#18181b] transition-colors">
-                                <td class="px-5 py-3 flex items-center gap-3">
-                                    <img src="https://images.evetech.net/types/${item.id}/icon?size=32" class="w-6 h-6 rounded border border-gray-700" ${fallbackImg}>
-                                    <span class="text-gray-100 truncate max-w-[150px] md:max-w-[200px]" title="${item.name}">${item.name}</span>
-                                </td>
-                                <td class="px-5 py-3 text-right text-yellow-500">${qty.toLocaleString()}</td>
-                                <td class="px-5 py-3 text-right text-gray-400">${Math.floor(price).toLocaleString()}</td>
-                                <td class="px-5 py-3 text-right font-bold text-white">${Math.floor(subtotal).toLocaleString()}</td>
-                            </tr>`;
-                    } else {
-                        zeroItemsCount++;
-                        zeroTable.innerHTML += `
-                            <tr class="hover:bg-orange-950/20 transition-colors">
-                                <td class="px-5 py-3 flex items-center gap-3">
-                                    <img src="https://images.evetech.net/types/${item.id}/icon?size=32" class="w-6 h-6 rounded border border-orange-800/40 opacity-80" ${fallbackImg}>
-                                    <span class="text-orange-200/90 truncate max-w-[150px] md:max-w-[200px]" title="${item.name}">${item.name}</span>
-                                </td>
-                                <td class="px-5 py-3 text-right text-yellow-600/60">${qty.toLocaleString()}</td>
-                                <td class="px-5 py-3 text-right text-orange-500/80 text-[10px] uppercase tracking-wider font-bold">${i18n[currentLang].noApiData}</td>
-                            </tr>`;
-                    }
-                });
-
-                if(validItemsCount === 0) validTable.innerHTML = `<tr><td colspan='4' class='p-10 text-center font-sans text-gray-400'>${i18n[currentLang].noMarketItems}</td></tr>`;
-                if(zeroItemsCount === 0) zeroTable.innerHTML = `<tr><td colspan='3' class='p-6 text-center font-sans text-orange-700/60'>${i18n[currentLang].t2Empty}</td></tr>`;
-
-                document.getElementById('valuedCount').innerText = `${validItemsCount} ${i18n[currentLang].items}`;
-                document.getElementById('zeroCount').innerText = `${zeroItemsCount} ${i18n[currentLang].items}`;
-
-                const multiplier = 1 - (taxRate / 100);
-                const finalISK = Math.floor(totalValue * multiplier);
-                
-                if(taxRate > 0) {
-                    netLabel.innerText = `${i18n[currentLang].estValue.replace(':', '')} (-${taxRate}%):`;
-                } else {
-                    netLabel.innerText = i18n[currentLang].estValue;
-                }
-                
-                finalNet.innerHTML = `${finalISK.toLocaleString()} <span class="text-sm text-green-500">ISK</span>`;
-
-                renderChart(chartData);
-
-                if (validItemsCount > 0) {
-                    chartData.sort((a, b) => b.value - a.value);
-                    const topItems = chartData.slice(0, 3).map(item => item.name).join(', ');
-                    globalReportText = `${i18n[currentLang].reportVal} ${finalISK.toLocaleString()} ISK\n${i18n[currentLang].reportItems} ${topItems}`;
-                    copyBtn.classList.remove('hidden'); 
-                }
-
-            } catch (err) {
-                validTable.innerHTML = `<tr><td colspan='4' class='p-10 text-center text-red-400 font-sans font-bold'>BŁĄD: ${err.message}</td></tr>`;
-            } finally {
-                btn.disabled = false;
-                btn.innerText = i18n[currentLang].scanBtn;
-            }
+        const profitEl = document.getElementById('profitOutput');
+        profitEl.innerHTML = `${profit > 0 ? '+' : ''}${profit.toLocaleString('en-US', {maximumFractionDigits: 0})} ISK`;
+        
+        const isProfitable = profit > 0;
+        
+        // Zmiana kolorów w oknie Zysku w zależności od wyniku
+        const profitBox = document.getElementById('profitBox');
+        if(isProfitable) {
+            profitBox.className = "mt-auto m-5 p-4 bg-green-900/10 border border-green-800/30 rounded-lg text-center";
+            profitEl.className = "block text-2xl font-black text-green-400 tracking-tighter";
+            document.getElementById('marginOutput').className = "block text-[10px] text-green-500 font-mono mt-1";
+        } else {
+            profitBox.className = "mt-auto m-5 p-4 bg-red-900/10 border border-red-800/30 rounded-lg text-center";
+            profitEl.className = "block text-2xl font-black text-red-400 tracking-tighter";
+            document.getElementById('marginOutput').className = "block text-[10px] text-red-500 font-mono mt-1";
         }
+        
+        document.getElementById('marginOutput').innerHTML = `( ${margin.toFixed(1)}% Margin )`;
+    }
+</script>
 
-        function copyReport() {
-            if (!globalReportText) return;
-            
-            navigator.clipboard.writeText(globalReportText).then(() => {
-                const btn = document.getElementById('copyBtn');
-                const originalText = btn.innerText;
-                
-                btn.innerText = i18n[currentLang].copiedBtn;
-                btn.classList.add('text-green-400', 'border-green-500', 'bg-green-900/20');
-                
-                setTimeout(() => {
-                    btn.innerText = originalText;
-                    btn.classList.remove('text-green-400', 'border-green-500', 'bg-green-900/20');
-                }, 2000);
-            });
-        }
-
-        function renderChart(data) {
-            const ctx = document.getElementById('valueChart').getContext('2d');
-            document.getElementById('chartContainer').classList.remove('hidden');
-            document.getElementById('chartContainer').classList.add('flex');
-
-            data.sort((a, b) => b.value - a.value);
-
-            let labels = [];
-            let values = [];
-            let otherValue = 0;
-
-            for (let i = 0; i < data.length; i++) {
-                if (i < 5) {
-                    labels.push(data[i].name);
-                    values.push(data[i].value);
-                } else {
-                    otherValue += data[i].value;
-                }
-            }
-
-            if (otherValue > 0) {
-                labels.push(i18n[currentLang].otherItems);
-                values.push(otherValue);
-            }
-
-            if (myChart) myChart.destroy();
-
-            myChart = new Chart(ctx, {
-                type: 'doughnut',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        data: values,
-                        backgroundColor: ['#eab308', '#ca8a04', '#a16207', '#52525b', '#3f3f46', '#27272a'],
-                        borderWidth: 2,
-                        borderColor: '#121214'
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    layout: {
-                        padding: { bottom: 10, top: 10 } 
-                    },
-                    plugins: {
-                        legend: { 
-                            display: true, 
-                            position: 'bottom', 
-                            labels: {
-                                color: '#a1a1aa',
-                                font: { family: "'JetBrains Mono', monospace", size: 9 },
-                                boxWidth: 10,
-                                padding: 15
-                            }
-                        },
-                        tooltip: {
-                            backgroundColor: '#18181b',
-                            titleFont: { family: "'Inter', sans-serif" },
-                            bodyFont: { family: "'JetBrains Mono', monospace" },
-                            padding: 10,
-                            callbacks: {
-                                label: function(context) {
-                                    let val = context.raw;
-                                    return " " + Math.floor(val).toLocaleString() + " ISK";
-                                }
-                            }
-                        }
-                    },
-                    cutout: '65%' 
-                }
-            });
-        }
-    </script>
 </body>
 </html>
