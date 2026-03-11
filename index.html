@@ -364,8 +364,10 @@
     function openTab(tabName) {
         document.getElementById('content-loot').classList.add('hidden');
         document.getElementById('content-industry').classList.add('hidden');
+        document.getElementById('content-mining').classList.add('hidden');
         document.getElementById('tab-loot').classList.remove('active');
         document.getElementById('tab-industry').classList.remove('active');
+        document.getElementById('tab-mining').classList.remove('active');
 
         document.getElementById('content-' + tabName).classList.remove('hidden');
         document.getElementById('tab-' + tabName).classList.add('active');
@@ -915,5 +917,6 @@
 
 </body>
 </html>
+
 
 
