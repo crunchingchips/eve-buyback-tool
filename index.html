@@ -1,37 +1,35 @@
 <!DOCTYPE html>
 <html lang="pl">
-    <head>
-        <!-- Google tag (gtag.js) -->
+<head>
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-2BH4XMJ7TK"></script>
     <script>
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
       gtag('js', new Date());
-    
       gtag('config', 'G-2BH4XMJ7TK');
     </script>
 
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>EVE Online - MultiTool</title>
-    
+
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
+
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;900&family=JetBrains+Mono:wght@400;700&display=swap');
-        
+
         body { font-family: 'Inter', sans-serif; background: #09090b; color: #e0e0e0; margin: 0; }
         .font-mono { font-family: 'JetBrains Mono', monospace; }
-        
+
         .custom-scroll::-webkit-scrollbar { width: 6px; }
         .custom-scroll::-webkit-scrollbar-track { background: #09090b; }
         .custom-scroll::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 4px; }
         .custom-scroll::-webkit-scrollbar-thumb:hover { background: #52525b; }
-        
+
         .panel-glow { box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5); }
-        
+
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
         .animate-fade-in { animation: fadeIn 0.2s ease-out forwards; }
 
@@ -56,15 +54,16 @@
 <body class="p-4 md:p-6 pb-16 min-h-screen">
 
     <div class="max-w-[1400px] mx-auto relative">
-        
+
         <header class="mb-6 border-b border-gray-800/50 pb-2 flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
             <div>
                 <h1 class="text-3xl font-black text-gray-100 tracking-tight uppercase">EVE <span class="text-yellow-500">MultiTool</span></h1>
-                <div class="flex mt-2 gap-2">
-                    <div id="tab-loot" class="nav-tab active" onclick="openTab('loot')">Loot Analyzer</div>
-                    <div id="tab-industry" class="nav-tab" onclick="openTab('industry')">Industry Tool</div>
-                    <div id="tab-mining" class="nav-tab" onclick="openTab('mining')">Mining Tool</div></div>
+                <div class="flex mt-2 gap-2 overflow-x-auto custom-scroll pb-1">
+                    <div id="tab-loot" class="nav-tab active whitespace-nowrap" onclick="openTab('loot')" data-i18n="tabLoot">Loot Analyzer</div>
+                    <div id="tab-industry" class="nav-tab whitespace-nowrap" onclick="openTab('industry')" data-i18n="tabInd">Industry Tool</div>
+                    <div id="tab-mining" class="nav-tab whitespace-nowrap" onclick="openTab('mining')" data-i18n="tabMin">Mining Tool</div>
                 </div>
+            </div>
             <div class="flex gap-4 pb-1 absolute top-0 right-0 md:relative">
                 <button onclick="setGlobalLanguage('pl')" id="lang-pl" class="text-2xl transition-all cursor-pointer filter grayscale opacity-40 hover:opacity-100 hover:grayscale-0" title="Polski">🇵🇱</button>
                 <button onclick="setGlobalLanguage('en')" id="lang-en" class="text-2xl transition-all cursor-pointer filter drop-shadow-[0_0_8px_rgba(255,255,255,0.6)]" title="English">🇬🇧</button>
@@ -72,17 +71,17 @@
         </header>
 
         <div id="content-loot" class="block animate-fade-in">
-            <p id="titleSub" class="text-xs text-gray-400 font-mono mb-4">Market Value Inventory Scanner</p>
+            <p id="titleSub" class="text-xs text-gray-400 font-mono mb-4" data-i18n="titleSub">Market Value Inventory Scanner</p>
             <div class="grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-5 gap-6">
-                
+
                 <div class="xl:col-span-1 flex flex-col gap-4">
                     <div class="h-[140px] p-5 bg-[#121214] rounded-xl border border-gray-700/80 panel-glow flex flex-col justify-center relative">
-                        <div id="netLabel" class="text-[11px] text-gray-400 uppercase font-bold mb-1 tracking-widest">Estimated Value:</div>
+                        <div id="netLabel" class="text-[11px] text-gray-400 uppercase font-bold mb-1 tracking-widest" data-i18n="estValue">Estimated Value:</div>
                         <div id="finalNet" class="text-3xl font-black text-green-400 tracking-tighter break-all">0 <span class="text-sm text-green-600">ISK</span></div>
-                        <button id="copyBtn" onclick="copyReport()" class="mt-3 w-full bg-[#18181b] hover:bg-[#27272a] border border-gray-700 text-gray-400 hover:text-white font-mono text-[10px] py-2 rounded uppercase transition-colors hidden cursor-pointer">Copy Report</button>
+                        <button id="copyBtn" onclick="copyReport()" class="mt-3 w-full bg-[#18181b] hover:bg-[#27272a] border border-gray-700 text-gray-400 hover:text-white font-mono text-[10px] py-2 rounded uppercase transition-colors hidden cursor-pointer" data-i18n="copyBtn">Copy Report</button>
                     </div>
                     <div class="h-[460px] p-4 bg-[#121214] rounded-xl border border-gray-700/80 panel-glow hidden flex-col" id="chartContainer">
-                        <div id="chartTitle" class="text-[11px] text-gray-400 uppercase font-bold mb-2 tracking-widest text-center border-b border-gray-800/50 pb-2">Value Structure</div>
+                        <div id="chartTitle" class="text-[11px] text-gray-400 uppercase font-bold mb-2 tracking-widest text-center border-b border-gray-800/50 pb-2" data-i18n="chartTitle">Value Structure</div>
                         <div class="relative w-full flex-grow flex justify-center items-center">
                             <canvas id="valueChart"></canvas>
                         </div>
@@ -92,9 +91,9 @@
                 <div class="xl:col-span-1 flex flex-col gap-4">
                     <div class="h-[80px] grid grid-cols-2 gap-3">
                         <div class="bg-[#121214] rounded-xl border border-gray-700/80 p-2 md:p-3 panel-glow flex flex-col justify-center">
-                            <label id="dataSourceLabel" class="block text-[10px] text-gray-400 uppercase font-bold mb-1">Data Source:</label>
+                            <label id="dataSourceLabel" class="block text-[10px] text-gray-400 uppercase font-bold mb-1" data-i18n="dataSource">Data Source:</label>
                             <select id="marketRegion" class="w-full bg-[#09090b] border border-gray-600 p-1.5 font-mono text-xs text-yellow-400 rounded outline-none cursor-pointer focus:border-yellow-500 transition-colors">
-                                <option value="global" id="optGlobal">ESI Average</option>
+                                <option value="global" id="optGlobal" data-i18n="optGlobal">ESI Average</option>
                                 <option value="10000002">Jita (Max Buy)</option>
                                 <option value="10000043">Amarr (Max Buy)</option>
                                 <option value="10000032">Dodixie (Max Buy)</option>
@@ -103,57 +102,57 @@
                             </select>
                         </div>
                         <div class="bg-[#121214] rounded-xl border border-gray-700/80 p-2 md:p-3 panel-glow flex flex-col justify-center">
-                            <label id="lootTaxLabelText" class="block text-[10px] text-gray-400 uppercase font-bold mb-1">Margin/Tax (%):</label>
+                            <label id="lootTaxLabelText" class="block text-[10px] text-gray-400 uppercase font-bold mb-1" data-i18n="lootTaxLabel">Margin/Tax (%):</label>
                             <input type="number" id="lootTaxRate" value="0" min="0" max="100" class="w-full bg-[#09090b] border border-gray-600 p-1.5 font-mono text-xs text-gray-200 rounded outline-none text-center focus:border-yellow-500 transition-colors">
                         </div>
                     </div>
                     <div class="h-[520px] flex flex-col bg-[#121214] rounded-xl border border-gray-700/80 overflow-hidden panel-glow">
                         <div class="bg-[#18181b] p-3 border-b border-gray-700">
-                            <span id="inputDataLabel" class="text-[10px] text-gray-400 uppercase font-bold tracking-widest ml-2">Input Data (Ctrl+V)</span>
+                            <span id="inputDataLabel" class="text-[10px] text-gray-400 uppercase font-bold tracking-widest ml-2" data-i18n="inputData">Input Data (Ctrl+V)</span>
                         </div>
                         <textarea id="invInput" class="w-full flex-grow bg-transparent p-4 font-mono text-[11px] md:text-xs text-gray-300 outline-none resize-none custom-scroll placeholder-gray-600" placeholder="Select your inventory in EVE Online and paste it here..."></textarea>
-                        <button id="scanBtn" onclick="runProcessor()" class="w-full bg-yellow-500 hover:bg-yellow-400 text-black font-black py-4 uppercase transition-all active:scale-[0.98] text-sm tracking-wide shadow-lg">Scan Inventory</button>
+                        <button id="scanBtn" onclick="runProcessor()" class="w-full bg-yellow-500 hover:bg-yellow-400 text-black font-black py-4 uppercase transition-all active:scale-[0.98] text-sm tracking-wide shadow-lg" data-i18n="scanBtn">Scan Inventory</button>
                     </div>
                 </div>
 
                 <div class="lg:col-span-3 xl:col-span-3 flex flex-col gap-4">
                     <div class="h-[300px] bg-[#121214] rounded-xl border border-gray-700/80 overflow-hidden panel-glow flex flex-col">
                         <div class="bg-[#18181b] p-3 px-5 border-b border-gray-700 flex justify-between items-center z-10">
-                            <span id="t1Title" class="text-yellow-500 font-bold uppercase tracking-widest text-[11px]">Market Recognized</span>
+                            <span id="t1Title" class="text-yellow-500 font-bold uppercase tracking-widest text-[11px]" data-i18n="t1Title">Market Recognized</span>
                             <span id="valuedCount" class="text-gray-300 font-mono text-[11px] bg-gray-800 px-2 py-1 rounded">0 items</span>
                         </div>
                         <div class="flex-grow overflow-y-auto custom-scroll relative">
                             <table class="w-full text-left">
                                 <thead class="bg-[#121214]/95 backdrop-blur sticky top-0 text-gray-400 uppercase text-[10px] font-bold z-10 border-b border-gray-700">
                                     <tr>
-                                        <th id="t1Col1" class="px-5 py-3">Item</th>
-                                        <th id="t1Col2" class="px-5 py-3 text-right">Quantity</th>
-                                        <th id="t1Col3" class="px-5 py-3 text-right">Unit Price</th>
-                                        <th id="t1Col4" class="px-5 py-3 text-right">Total Value</th>
+                                        <th id="t1Col1" class="px-5 py-3" data-i18n="t1Col1">Item</th>
+                                        <th id="t1Col2" class="px-5 py-3 text-right" data-i18n="t1Col2">Quantity</th>
+                                        <th id="t1Col3" class="px-5 py-3 text-right" data-i18n="t1Col3">Unit Price</th>
+                                        <th id="t1Col4" class="px-5 py-3 text-right" data-i18n="t1Col4">Total Value</th>
                                     </tr>
                                 </thead>
                                 <tbody id="validTable" class="divide-y divide-gray-800/70 font-mono text-gray-200 text-xs">
-                                    <tr><td colspan="4" class="p-10 text-center text-gray-500 italic font-sans text-sm" id="t1Empty">Waiting for scan...</td></tr>
+                                    <tr><td colspan="4" class="p-10 text-center text-gray-500 italic font-sans text-sm" id="t1Empty" data-i18n="t1Empty">Waiting for scan...</td></tr>
                                 </tbody>
                             </table>
                         </div>
                     </div>
                     <div class="h-[300px] bg-[#1a1515] rounded-xl border border-orange-800/40 overflow-hidden panel-glow flex flex-col">
                         <div class="bg-[#201818] p-3 px-5 border-b border-orange-800/50 flex justify-between items-center z-10">
-                            <span id="t2Title" class="text-orange-400 font-bold uppercase tracking-widest text-[11px]">Off-market / Limited</span>
+                            <span id="t2Title" class="text-orange-400 font-bold uppercase tracking-widest text-[11px]" data-i18n="t2Title">Off-market / Limited</span>
                             <span id="zeroCount" class="text-orange-200 font-mono text-[11px] bg-orange-900/50 px-2 py-1 rounded border border-orange-800/50">0 items</span>
                         </div>
                         <div class="flex-grow overflow-y-auto custom-scroll relative">
                             <table class="w-full text-left">
                                 <thead class="bg-[#1a1515]/95 backdrop-blur sticky top-0 text-orange-400/80 uppercase text-[10px] font-bold z-10 border-b border-orange-800/40">
                                     <tr>
-                                        <th id="t2Col1" class="px-5 py-3">Item</th>
-                                        <th id="t2Col2" class="px-5 py-3 text-right">Quantity</th>
-                                        <th id="t2Col3" class="px-5 py-3 text-right">API Status</th>
+                                        <th id="t2Col1" class="px-5 py-3" data-i18n="t1Col1">Item</th>
+                                        <th id="t2Col2" class="px-5 py-3 text-right" data-i18n="t1Col2">Quantity</th>
+                                        <th id="t2Col3" class="px-5 py-3 text-right" data-i18n="t2Col3">API Status</th>
                                     </tr>
                                 </thead>
                                 <tbody id="zeroTable" class="divide-y divide-orange-900/30 font-mono text-gray-300 text-xs">
-                                    <tr><td colspan="3" class="p-6 text-center text-orange-700/60 italic font-sans text-sm" id="t2Empty">No special items</td></tr>
+                                    <tr><td colspan="3" class="p-6 text-center text-orange-700/60 italic font-sans text-sm" id="t2Empty" data-i18n="t2Empty">No special items</td></tr>
                                 </tbody>
                             </table>
                         </div>
@@ -163,10 +162,9 @@
         </div>
 
         <div id="content-industry" class="hidden animate-fade-in">
-            <p id="indSub" class="text-xs text-gray-400 font-mono mb-4">Production Cost & Profit Calculator</p>
-            
+            <p id="indSub" class="text-xs text-gray-400 font-mono mb-4" data-i18n="indSub">Production Cost & Profit Calculator</p>
+
             <div class="flex flex-col md:flex-row gap-4 lg:gap-6 mb-6">
-                
                 <div class="w-full md:w-[160px] h-[160px] shrink-0 bg-[#121214] rounded-xl border border-gray-700/80 panel-glow flex items-center justify-center p-2 overflow-hidden">
                     <img src="https://images.evetech.net/types/626/render?size=256" id="mainIcon" alt="Item Render" class="max-h-full max-w-full object-contain drop-shadow-xl">
                 </div>
@@ -175,11 +173,11 @@
                     <div class="flex gap-4 mb-4">
                         <div class="flex-1">
                             <label class="block text-[10px] text-gray-400 uppercase font-bold mb-1.5"><i class="fas fa-hammer mr-1 text-gray-500"></i> <span data-i18n="meLabel">ME (Level):</span></label>
-                            <input type="number" id="meInput" value="10" min="0" max="10" oninput="updateMathLive()" class="w-full bg-[#09090b] border border-gray-600 p-2 font-mono text-sm text-yellow-400 rounded outline-none text-center focus:border-yellow-500 transition-colors">
+                            <input type="number" id="meInput" value="10" min="0" max="10" step="1" oninput="updateMathLive()" class="w-full bg-[#09090b] border border-gray-600 p-2 font-mono text-sm text-yellow-400 rounded outline-none text-center focus:border-yellow-500 transition-colors">
                         </div>
                         <div class="flex-1">
                             <label class="block text-[10px] text-gray-400 uppercase font-bold mb-1.5"><i class="fas fa-stopwatch mr-1 text-gray-500"></i> <span data-i18n="teLabel">TE (Level):</span></label>
-                            <input type="number" id="teInput" value="20" min="0" max="20" step="2" oninput="updateMathLive()" class="w-full bg-[#09090b] border border-gray-600 p-2 font-mono text-sm text-yellow-400 rounded outline-none text-center focus:border-yellow-500 transition-colors">
+                            <input type="number" id="teInput" value="10" min="0" max="10" step="1" oninput="updateMathLive()" class="w-full bg-[#09090b] border border-gray-600 p-2 font-mono text-sm text-yellow-400 rounded outline-none text-center focus:border-yellow-500 transition-colors">
                         </div>
                     </div>
                     <div>
@@ -205,7 +203,7 @@
                             <button class="w-full bg-yellow-500 hover:bg-yellow-400 text-black font-black py-2.5 rounded uppercase transition-all active:scale-[0.98] text-xs tracking-wide shadow-lg" onclick="fetchIndustryData()" data-i18n="calcBtn">CALCULATE</button>
                         </div>
                     </div>
-                    
+
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div>
                             <label class="block text-[10px] text-gray-400 uppercase font-bold mb-1.5">
@@ -237,19 +235,19 @@
                         <i class="fas fa-cubes mr-2"></i> Base Materials
                     </div>
                     <ul class="flex-grow overflow-y-auto custom-scroll divide-y divide-gray-800/70 font-mono text-gray-300 text-xs" id="col1List">
-                        <li class="p-6 text-center text-gray-600 italic font-sans" id="indEmpty1">Waiting for calculation...</li>
+                        <li class="p-6 text-center text-gray-600 italic font-sans" id="indEmpty1" data-i18n="t1Empty">Waiting for calculation...</li>
                     </ul>
                 </div>
-                
+
                 <div class="bg-[#121214] rounded-xl border border-gray-700/80 overflow-hidden panel-glow flex flex-col h-[400px]">
                     <div class="bg-[#18181b] p-3 px-5 border-b border-gray-700 text-yellow-500 font-bold uppercase tracking-widest text-[11px]" data-i18n="col2Title">
                         <i class="fas fa-bolt mr-2"></i> Editable Materials
                     </div>
                     <ul class="flex-grow overflow-y-auto custom-scroll divide-y divide-gray-800/70 font-mono text-gray-300 text-xs" id="col2List">
-                        <li class="p-6 text-center text-gray-600 italic font-sans" id="indEmpty2">Waiting for calculation...</li>
+                        <li class="p-6 text-center text-gray-600 italic font-sans" id="indEmpty2" data-i18n="t1Empty">Waiting for calculation...</li>
                     </ul>
                 </div>
-                
+
                 <div class="bg-[#121214] rounded-xl border border-gray-700/80 overflow-hidden panel-glow flex flex-col h-[400px]">
                     <div class="bg-[#18181b] p-3 px-5 border-b border-gray-700 text-yellow-500 font-bold uppercase tracking-widest text-[11px]" data-i18n="col3Title">
                         <i class="fas fa-chart-line mr-2"></i> Costs & Income
@@ -261,7 +259,7 @@
                         <li class="flex justify-between"><span class="text-orange-400 font-bold uppercase" data-i18n="mktVal">Market Value:</span> <span class="text-orange-400 font-bold">0 ISK</span></li>
                         <li class="flex justify-between mt-4 pt-4 border-t border-gray-700 border-dashed"><span data-i18n="prodTime" class="text-gray-400"><i class="fas fa-clock mr-1"></i> Est. Time:</span> <span id="timeOutput" class="text-sky-400 font-bold">0s</span></li>
                     </ul>
-                    
+
                     <div id="profitBox" class="mt-auto m-5 p-4 bg-gray-900/30 border border-gray-800/50 rounded-lg text-center">
                         <span class="block text-[10px] text-gray-400 font-bold uppercase tracking-widest mb-1" data-i18n="estProfit">Estimated Profit</span>
                         <span class="block text-2xl font-black text-gray-300 tracking-tighter" id="profitOutput">0 ISK</span>
@@ -270,35 +268,36 @@
                 </div>
             </div>
         </div>
+
         <div id="content-mining" class="hidden animate-fade-in">
-            <p class="text-xs text-gray-400 font-mono mb-4">Ore, Ice & Gas Profitability Ranking</p>
+            <p class="text-xs text-gray-400 font-mono mb-4" data-i18n="minSub">Ultimate Ore, Ice & Gas Analyzer</p>
             <div class="grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-5 gap-6">
-                
+
                 <div class="xl:col-span-2 flex flex-col gap-4">
                     
                     <div class="bg-[#121214] rounded-xl border border-gray-700/80 p-5 panel-glow">
-                        <div class="text-[11px] text-gray-400 uppercase font-bold mb-4 tracking-widest border-b border-gray-800/50 pb-2">Ship Capabilities</div>
-                        <div class="grid grid-cols-2 gap-4">
+                        <div class="text-[11px] text-gray-400 uppercase font-bold mb-4 tracking-widest border-b border-gray-800/50 pb-2" data-i18n="minShip">Ship Capabilities</div>
+                        <div class="grid grid-cols-3 gap-4">
                             <div>
-                                <label class="block text-[10px] text-gray-500 uppercase font-bold mb-1">Yield (m³ / cycle)</label>
-                                <input type="number" id="miningYield" value="1000" class="w-full bg-[#09090b] border border-gray-600 p-2 font-mono text-sm text-gray-200 rounded outline-none focus:border-yellow-500 transition-colors">
+                                <label class="block text-[9px] text-gray-500 uppercase font-bold mb-1 truncate" data-i18n="minYield">Yield (m³)</label>
+                                <input type="number" id="miningYield" value="1000" class="w-full bg-[#09090b] border border-gray-600 p-2 font-mono text-sm text-gray-200 rounded outline-none focus:border-yellow-500 transition-colors text-center">
                             </div>
                             <div>
-                                <label class="block text-[10px] text-gray-500 uppercase font-bold mb-1">Cycle Time (s)</label>
-                                <input type="number" id="miningCycle" value="60" class="w-full bg-[#09090b] border border-gray-600 p-2 font-mono text-sm text-gray-200 rounded outline-none focus:border-yellow-500 transition-colors">
+                                <label class="block text-[9px] text-gray-500 uppercase font-bold mb-1 truncate" data-i18n="minCycle">Cycle (s)</label>
+                                <input type="number" id="miningCycle" value="60" class="w-full bg-[#09090b] border border-gray-600 p-2 font-mono text-sm text-gray-200 rounded outline-none focus:border-yellow-500 transition-colors text-center">
                             </div>
-                            <div class="col-span-2">
-                                <label class="block text-[10px] text-gray-500 uppercase font-bold mb-1">Ore Hold (m³)</label>
-                                <input type="number" id="miningHold" value="5000" class="w-full bg-[#09090b] border border-gray-600 p-2 font-mono text-sm text-gray-200 rounded outline-none focus:border-yellow-500 transition-colors">
+                            <div>
+                                <label class="block text-[9px] text-gray-500 uppercase font-bold mb-1 truncate" data-i18n="minHold">Hold (m³)</label>
+                                <input type="number" id="miningHold" value="5000" class="w-full bg-[#09090b] border border-gray-600 p-2 font-mono text-sm text-gray-200 rounded outline-none focus:border-yellow-500 transition-colors text-center">
                             </div>
                         </div>
                     </div>
 
                     <div class="bg-[#121214] rounded-xl border border-gray-700/80 p-5 panel-glow flex-grow flex flex-col">
-                        <div class="text-[11px] text-gray-400 uppercase font-bold mb-4 tracking-widest border-b border-gray-800/50 pb-2">Market & Filters</div>
+                        <div class="text-[11px] text-gray-400 uppercase font-bold mb-4 tracking-widest border-b border-gray-800/50 pb-2" data-i18n="minFilters">Market & Filters</div>
                         
-                        <label class="block text-[10px] text-gray-500 uppercase font-bold mb-1 mt-1">Target Market</label>
-                        <select id="miningMarket" class="w-full bg-[#09090b] border border-gray-600 p-2 font-mono text-sm text-yellow-400 rounded outline-none cursor-pointer focus:border-yellow-500 transition-colors mb-5">
+                        <label class="block text-[10px] text-gray-500 uppercase font-bold mb-1 mt-1" data-i18n="minTarget">Target Market</label>
+                        <select id="miningMarket" class="w-full bg-[#09090b] border border-gray-600 p-2 font-mono text-sm text-yellow-400 rounded outline-none cursor-pointer focus:border-yellow-500 transition-colors mb-4">
                             <option value="60003760">Jita (4-4 Caldari Navy)</option>
                             <option value="60008494">Amarr (Emperor Family)</option>
                             <option value="60011866">Dodixie (Fed. Navy)</option>
@@ -306,49 +305,62 @@
                             <option value="60005686">Hek (Boundless Creation)</option>
                         </select>
 
-                        <label class="block text-[10px] text-gray-500 uppercase font-bold mb-3">Resource Types</label>
-                        <div class="flex flex-col gap-3 font-mono text-xs text-gray-300 mb-6">
-                            <label class="flex items-center gap-2 cursor-pointer hover:text-white transition-colors"><input type="checkbox" id="filterAsteroids" checked class="accent-yellow-500 w-4 h-4"> Standard Ore (Asteroids)</label>
-                            <label class="flex items-center gap-2 cursor-pointer hover:text-white transition-colors"><input type="checkbox" id="filterIce" checked class="accent-yellow-500 w-4 h-4"> Ice</label>
-                            <label class="flex items-center gap-2 cursor-pointer hover:text-white transition-colors"><input type="checkbox" id="filterMoon" checked class="accent-yellow-500 w-4 h-4"> Moon Ore</label>
-                            <label class="flex items-center gap-2 cursor-pointer hover:text-white transition-colors"><input type="checkbox" id="filterGas" checked class="accent-yellow-500 w-4 h-4"> Gas (K-Space & WH)</label>
+                        <label class="block text-[10px] text-gray-500 uppercase font-bold mb-1" data-i18n="minRef">Refining Yield (%)</label>
+                        <div class="flex items-center gap-3 mb-5">
+                            <input type="range" id="refineYield" min="50" max="90" value="50" class="flex-grow accent-yellow-500 cursor-pointer" oninput="this.nextElementSibling.innerText = this.value + '%'">
+                            <span class="text-xs font-mono text-yellow-500 w-8">50%</span>
+                        </div>
+
+                        <label class="block text-[10px] text-gray-500 uppercase font-bold mb-2" data-i18n="minLoc">Location Filter</label>
+                        <div class="flex gap-2 mb-5">
+                            <button onclick="toggleLoc('high')" id="loc-high" class="flex-1 text-[10px] px-2 py-1.5 rounded bg-green-900/30 border border-green-700 text-green-400 transition-all font-bold">HIGH-SEC</button>
+                            <button onclick="toggleLoc('low')" id="loc-low" class="flex-1 text-[10px] px-2 py-1.5 rounded bg-orange-900/30 border border-orange-700 text-orange-400 transition-all font-bold">LOW-SEC</button>
+                            <button onclick="toggleLoc('null')" id="loc-null" class="flex-1 text-[10px] px-2 py-1.5 rounded bg-red-900/30 border border-red-700 text-red-400 transition-all font-bold">NULL/WH</button>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 font-mono text-xs text-gray-300 mb-5 border-t border-gray-800/50 pt-4">
+                            <label class="flex items-center gap-2 cursor-pointer hover:text-white transition-colors truncate"><input type="checkbox" id="filterAsteroids" checked class="accent-yellow-500 w-4 h-4"> <span data-i18n="cbAst">Asteroids</span></label>
+                            <label class="flex items-center gap-2 cursor-pointer hover:text-white transition-colors truncate"><input type="checkbox" id="filterIce" checked class="accent-yellow-500 w-4 h-4"> <span data-i18n="cbIce">Ice</span></label>
+                            <label class="flex items-center gap-2 cursor-pointer hover:text-white transition-colors truncate"><input type="checkbox" id="filterMoon" checked class="accent-yellow-500 w-4 h-4"> <span data-i18n="cbMoon">Moon Ore</span></label>
+                            <label class="flex items-center gap-2 cursor-pointer hover:text-white transition-colors truncate"><input type="checkbox" id="filterGas" checked class="accent-yellow-500 w-4 h-4"> <span data-i18n="cbGas">Gas</span></label>
                         </div>
                         
+                        <div class="border-t border-gray-800/50 pt-4 mb-4">
+                            <label class="flex items-center gap-2 cursor-pointer hover:text-white transition-colors text-xs font-mono text-yellow-500"><input type="checkbox" id="filterCompressed" class="accent-yellow-500 w-4 h-4"> <span data-i18n="cbComp">Use Compressed Prices</span></label>
+                        </div>
+
                         <div class="mt-auto">
-                            <button id="calcMiningBtn" class="w-full bg-yellow-500 hover:bg-yellow-400 text-black font-black py-4 uppercase transition-all active:scale-[0.98] text-sm tracking-wide shadow-lg rounded">Calculate Profit</button>
+                            <button id="calcMiningBtn" onclick="runMiningAnalysis()" class="w-full bg-yellow-500 hover:bg-yellow-400 text-black font-black py-3.5 uppercase transition-all active:scale-[0.98] text-sm tracking-wide shadow-lg rounded" data-i18n="minCalcBtn">Calculate Profit</button>
                         </div>
                     </div>
-
                 </div>
 
                 <div class="xl:col-span-3 flex flex-col gap-4">
-                    <div class="h-[600px] xl:h-[685px] bg-[#121214] rounded-xl border border-gray-700/80 overflow-hidden panel-glow flex flex-col">
+                    <div class="h-[650px] bg-[#121214] rounded-xl border border-gray-700/80 overflow-hidden panel-glow flex flex-col">
                         <div class="bg-[#18181b] p-3 px-5 border-b border-gray-700 flex justify-between items-center z-10">
-                            <span class="text-yellow-500 font-bold uppercase tracking-widest text-[11px]">Profitability Ranking</span>
-                            <span class="text-gray-400 font-mono text-[10px]">Sorted by ISK / Hour</span>
+                            <span class="text-yellow-500 font-bold uppercase tracking-widest text-[11px]" data-i18n="minRank">Intelligence Ranking</span>
+                            <span class="text-gray-400 font-mono text-[10px]" data-i18n="minSort">Sorted by ISK / Hour</span>
                         </div>
                         
                         <div class="grid grid-cols-12 gap-2 p-3 bg-[#18181b] border-b border-gray-800 text-[10px] font-black text-gray-500 uppercase tracking-wider text-right pr-4">
-                            <div class="col-span-4 text-left">Resource</div>
-                            <div class="col-span-2">Price (Unit)</div>
+                            <div class="col-span-4 text-left" data-i18n="minCol1">Resource & Logic</div>
+                            <div class="col-span-2" data-i18n="minCol2">Best Price</div>
                             <div class="col-span-2">ISK / m³</div>
                             <div class="col-span-2 text-yellow-500">ISK / Hour</div>
-                            <div class="col-span-2">Time to Fill</div>
+                            <div class="col-span-2" data-i18n="minCol5">Hold Value</div>
                         </div>
 
                         <div id="miningResults" class="flex-grow overflow-y-auto custom-scroll p-2 flex flex-col gap-1">
-                            
                             <div class="grid grid-cols-12 gap-2 p-3 bg-[#09090b] rounded border border-gray-800/50 text-xs font-mono items-center text-right hover:border-gray-600 transition-colors opacity-50">
                                 <div class="col-span-4 text-left font-bold text-gray-200 flex items-center gap-3">
                                     <div class="w-6 h-6 bg-gray-800 rounded"></div>
-                                    Waiting for scan...
+                                    <span data-i18n="t1Empty">Waiting for scan...</span>
                                 </div>
                                 <div class="col-span-2 text-gray-500">--</div>
                                 <div class="col-span-2 text-gray-500">--</div>
                                 <div class="col-span-2 text-gray-500">--</div>
                                 <div class="col-span-2 text-gray-600 text-[10px]">--</div>
                             </div>
-
                         </div>
                     </div>
                 </div>
@@ -375,12 +387,14 @@
 
     const globalI18n = {
         en: {
-            titleSub: "Market Value Inventory Scanner", indSub: "Production Cost & Profit Calculator", estValue: "Estimated Value:", copyBtn: "Copy Report", copiedBtn: "COPIED!",
+            tabLoot: "Loot Analyzer", tabInd: "Industry Tool", tabMin: "Mining Tool",
+            titleSub: "Market Value Inventory Scanner", indSub: "Production Cost & Profit Calculator", minSub: "Ultimate Ore, Ice & Gas Analyzer",
+            estValue: "Estimated Value:", copyBtn: "Copy Report", copiedBtn: "COPIED!",
             chartTitle: "Value Structure", dataSource: "Data Source:", lootTaxLabel: "Margin / Tax (%):", inputData: "Input Data (Ctrl+V)",
             placeholder: "Select your inventory in EVE Online and paste it here...", scanBtn: "Scan Inventory", t1Title: "Market Recognized",
             t1Col1: "Item", t1Col2: "Quantity", t1Col3: "Unit Price", t1Col4: "Total Value", t1Empty: "Waiting for calculation...",
             t2Title: "Off-market / Limited", t2Col3: "API Status", t2Empty: "No special items", optGlobal: "ESI Average",
-            noApiData: "No API Data", otherItems: "Other items", fetching: "Fetching ESI Data...", analyzing: "Market Analysis in progress...",
+            noApiData: "No API Data", otherItems: "Other items", fetching: "Scanning Market...", analyzing: "Market Analysis in progress...",
             scanning: "Scanning Regional Orders...", noMarketItems: "No liquid market items found.", reportVal: "🧾 Loot Value:",
             reportItems: "📦 Top items:", items: "items",
             
@@ -388,23 +402,37 @@
             indTaxLabel: "Facility Tax (%):", hubLabel: "Market (Hub):", priceLabel: "Est. Item Price:", calcBtn: "CALCULATE",
             col1Title: '<i class="fas fa-cubes mr-2"></i> Base Materials', col2Title: '<i class="fas fa-bolt mr-2"></i> Editable Materials',
             col3Title: '<i class="fas fa-chart-line mr-2"></i> Costs & Income', matCost: "Material Cost:", statTax: "Tax & Fees:",
-            totCost: "Total Cost:", mktVal: "Market Value:", estProfit: "ESTIMATED PROFIT", prodTime: '<i class="fas fa-clock mr-1"></i> Est. Time:'
+            totCost: "Total Cost:", mktVal: "Market Value:", estProfit: "ESTIMATED PROFIT", prodTime: '<i class="fas fa-clock mr-1"></i> Est. Time:',
+            
+            minShip: "Ship Capabilities", minYield: "Yield (m³)", minCycle: "Cycle (s)", minHold: "Hold (m³)",
+            minFilters: "Market & Filters", minTarget: "Target Market", minRef: "Refining Yield (%)", minLoc: "Location Filter",
+            cbAst: "Standard Ore", cbIce: "Ice", cbMoon: "Moon Ore", cbGas: "Gas (WH/K-Space)", cbComp: "Use Compressed Prices",
+            minRank: "Intelligence Ranking", minSort: "Sorted by ISK / Hour", minCol1: "Resource & Logic", minCol2: "Best Price", minCol5: "Hold Value",
+            minRaw: "Raw Market", minRefined: "Refined", minMin: "min", minCalcBtn: "Calculate Profit"
         },
         pl: {
-            titleSub: "Skaner Wartości Rynkowej Inwentarza", indSub: "Kalkulator Kosztów i Zysku Produkcji", estValue: "Wartość Szacunkowa:", copyBtn: "Skopiuj Raport", copiedBtn: "SKOPIOWANO!",
+            tabLoot: "Skaner Łupów", tabInd: "Kalkulator Produkcji", tabMin: "Kalkulator Górniczy",
+            titleSub: "Skaner Wartości Rynkowej Inwentarza", indSub: "Kalkulator Kosztów i Zysku Produkcji", minSub: "Zaawansowany Analizator Górniczy",
+            estValue: "Wartość Szacunkowa:", copyBtn: "Skopiuj Raport", copiedBtn: "SKOPIOWANO!",
             chartTitle: "Struktura Wartości", dataSource: "Źródło Danych:", lootTaxLabel: "Korekta (%):", inputData: "Dane Wejściowe (Ctrl+V)",
             placeholder: "Zaznacz inwentarz w EVE Online i wklej go tutaj...", scanBtn: "Skanuj Inwentarz", t1Title: "Rozpoznane na rynku",
             t1Col1: "Przedmiot", t1Col2: "Ilość", t1Col3: "Cena Jedn.", t1Col4: "Wartość", t1Empty: "Czekam na dane...",
             t2Title: "Poza rynkiem / Limitowane", t2Col3: "Status API", t2Empty: "Brak przedmiotów specjalnych", optGlobal: "Średnia ESI",
-            noApiData: "Brak Danych API", otherItems: "Pozostałe przedmioty", fetching: "Pobieranie Danych ESI...", analyzing: "Analiza Rynku w toku...",
-            scanning: "Skanowanie Zleceń...", noMarketItems: "Brak przedmiotów o płynnej wartości rynkowej.", reportVal: "🧾 Wycena Loots:",
+            noApiData: "Brak Danych", otherItems: "Pozostałe", fetching: "Skanowanie Rynku...", analyzing: "Analiza Rynku w toku...",
+            scanning: "Skanowanie Zleceń...", noMarketItems: "Brak przedmiotów o rynkowej wartości.", reportVal: "🧾 Wycena Loots:",
             reportItems: "📦 Główne przedmioty:", items: "poz.",
             
-            meLabel: "ME (Level):", teLabel: "TE (Level):", runsLabel: "Ilość (Runs):", bpLabel: "Nazwa Przedmiotu:", stationLabel: "System (Wskaźnik SCI):",
-            indTaxLabel: "Podatek Stacji (%):", hubLabel: "Rynek (Hub):", priceLabel: "Szac. Cena Rynkowa:", calcBtn: "OBLICZ KOSZTY",
+            meLabel: "ME (Poziom):", teLabel: "TE (Poziom):", runsLabel: "Ilość (Runs):", bpLabel: "Nazwa Przedmiotu:", stationLabel: "System (Wskaźnik SCI):",
+            indTaxLabel: "Podatek Stacji (%):", hubLabel: "Rynek (Hub):", priceLabel: "Szac. Cena Rynkowa:", calcBtn: "OBLICZ ZYSK",
             col1Title: '<i class="fas fa-cubes mr-2"></i> Baza Materiałowa', col2Title: '<i class="fas fa-bolt mr-2"></i> Własne Ceny (Edycja)',
             col3Title: '<i class="fas fa-chart-line mr-2"></i> Koszty i Zysk', matCost: "Koszt Materiałów:", statTax: "Podatki (SCI + Stacja):",
-            totCost: "Całkowity Koszt:", mktVal: "Wartość Rynkowa:", estProfit: "SZACOWANY ZYSK", prodTime: '<i class="fas fa-clock mr-1"></i> Czas:'
+            totCost: "Całkowity Koszt:", mktVal: "Wartość Rynkowa:", estProfit: "SZACOWANY ZYSK", prodTime: '<i class="fas fa-clock mr-1"></i> Czas:',
+            
+            minShip: "Parametry Statku", minYield: "Uzysk (m³)", minCycle: "Cykl (s)", minHold: "Ładownia (m³)",
+            minFilters: "Rynek i Filtry", minTarget: "Docelowy Rynek", minRef: "Wydajność Przetopu (%)", minLoc: "Filtry Lokacji",
+            cbAst: "Zwykłe Rudy", cbIce: "Lód (Ice)", cbMoon: "Ruda Księżycowa", cbGas: "Gaz (WH / K-Space)", cbComp: "Użyj Cen Skompresowanych",
+            minRank: "Ranking Opłacalności", minSort: "Sortowane wg ISK / Godzinę", minCol1: "Surowiec i Logika", minCol2: "Najlepsza Cena", minCol5: "Wartość Ładowni",
+            minRaw: "Sprzedaż Rudy", minRefined: "Przetopione", minMin: "min", minCalcBtn: "Oblicz Zysk"
         }
     };
     
@@ -417,35 +445,11 @@
         document.getElementById('lang-pl').className = lang === 'pl' ? 'text-2xl transition-all cursor-pointer filter drop-shadow-[0_0_8px_rgba(255,255,255,0.6)]' : 'text-2xl transition-all cursor-pointer filter grayscale opacity-40 hover:opacity-100 hover:grayscale-0';
         document.getElementById('lang-en').className = lang === 'en' ? 'text-2xl transition-all cursor-pointer filter drop-shadow-[0_0_8px_rgba(255,255,255,0.6)]' : 'text-2xl transition-all cursor-pointer filter grayscale opacity-40 hover:opacity-100 hover:grayscale-0';
 
-        document.getElementById('titleSub').innerText = d.titleSub;
-        if(document.getElementById('indSub')) document.getElementById('indSub').innerText = d.indSub;
-        document.getElementById('copyBtn').innerText = document.getElementById('copyBtn').innerText.includes("SKOPIOWANO") || document.getElementById('copyBtn').innerText.includes("COPIED") ? d.copiedBtn : d.copyBtn;
-        document.getElementById('chartTitle').innerText = d.chartTitle;
-        document.getElementById('dataSourceLabel').innerText = d.dataSource;
-        document.getElementById('optGlobal').innerText = d.optGlobal;
-        document.getElementById('lootTaxLabelText').innerText = d.lootTaxLabel;
-        document.getElementById('inputDataLabel').innerText = d.inputData;
         document.getElementById('invInput').placeholder = d.placeholder;
-        if(!document.getElementById('scanBtn').disabled) document.getElementById('scanBtn').innerText = d.scanBtn;
         
-        document.getElementById('t1Title').innerText = d.t1Title;
-        document.getElementById('t1Col1').innerText = d.t1Col1;
-        document.getElementById('t1Col2').innerText = d.t1Col2;
-        document.getElementById('t1Col3').innerText = d.t1Col3;
-        document.getElementById('t1Col4').innerText = d.t1Col4;
-        document.getElementById('t2Title').innerText = d.t2Title;
-        document.getElementById('t2Col1').innerText = d.t2Col1;
-        document.getElementById('t2Col2').innerText = d.t2Col2;
-        document.getElementById('t2Col3').innerText = d.t2Col3;
-
         let taxRate = parseFloat(document.getElementById('lootTaxRate').value) || 0;
         document.getElementById('netLabel').innerText = taxRate > 0 ? `${d.estValue.replace(':', '')} (-${taxRate}%):` : d.estValue;
         
-        if(document.getElementById('t1Empty')) document.getElementById('t1Empty').innerText = d.t1Empty;
-        if(document.getElementById('t2Empty')) document.getElementById('t2Empty').innerText = d.t2Empty;
-        if(document.getElementById('indEmpty1')) document.getElementById('indEmpty1').innerText = d.t1Empty;
-        if(document.getElementById('indEmpty2')) document.getElementById('indEmpty2').innerText = d.t1Empty;
-
         const vCount = document.getElementById('valuedCount').innerText.replace(/\D/g,'');
         document.getElementById('valuedCount').innerText = `${vCount} ${d.items}`;
         const zCount = document.getElementById('zeroCount').innerText.replace(/\D/g,'');
@@ -464,7 +468,7 @@
     });
 
     // ==========================================
-    // 2. LOGIKA LOOT ANALYZER
+    // 2. LOGIKA LOOT ANALYZER (NINJA PARSER)
     // ==========================================
     let myChart = null;
     let globalReportText = ""; 
@@ -493,29 +497,56 @@
         zeroTable.innerHTML = "";
 
         try {
+            // --- NINJA PARSER START ---
             const lines = rawInput.split('\n').filter(l => l.trim() !== "");
             const inventoryMap = {};
+            let lastName = null; 
 
             lines.forEach(line => {
+                let cleanLine = line.trim();
+                
+                // Przypadek 1: Sama liczba w nowej linii (np. kopiowanie ikonek z Industry)
+                if (/^[\d\s,\.]+$/.test(cleanLine)) {
+                    if (lastName) {
+                        let qty = parseInt(cleanLine.replace(/\D/g, '')) || 1;
+                        inventoryMap[lastName] = (inventoryMap[lastName] - 1) + qty; // Usuwamy domyślną 1 i wstawiamy właściwą
+                        lastName = null; 
+                    }
+                    return; 
+                }
+
                 let name = "";
                 let qty = 1;
-                if (line.includes('\t')) {
-                    const parts = line.split('\t');
+
+                if (cleanLine.includes('\t')) {
+                    // Przypadek 2: Tabulator (Hangar w grze)
+                    const parts = cleanLine.split('\t');
                     name = parts[0].trim();
-                    qty = parseInt(parts[1].replace(/\D/g, '')) || 1; 
+                    qty = parseInt(parts[1]?.replace(/\D/g, '')) || 1;
                 } else {
-                    const match = line.trim().match(/^(.*?)\s+([\d\s]+)$/);
+                    // Przypadek 3: Spacja oddzielająca (Text paste)
+                    const match = cleanLine.match(/^(.*?)\s+([\d\s,\.]+)$/);
                     if (match) {
                         name = match[1].trim();
                         qty = parseInt(match[2].replace(/\D/g, '')) || 1;
                     } else {
-                        name = line.trim();
+                        // Przypadek 4: Sama nazwa 
+                        name = cleanLine;
                     }
                 }
-                if (name) inventoryMap[name] = (inventoryMap[name] || 0) + qty;
+
+                if (name) {
+                    inventoryMap[name] = (inventoryMap[name] || 0) + qty;
+                    lastName = name; 
+                } else {
+                    lastName = null;
+                }
             });
+            // --- NINJA PARSER END ---
 
             const uniqueNames = Object.keys(inventoryMap);
+            if(uniqueNames.length === 0) throw new Error("Empty Input");
+
             const idRes = await fetch('https://esi.evetech.net/latest/universe/ids/', {
                 method: 'POST', headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
                 body: JSON.stringify(uniqueNames)
@@ -646,23 +677,15 @@
     }
 
     // ==========================================
-    // 3. LOGIKA INDUSTRY CALCULATOR
+    // 3. LOGIKA INDUSTRY CALCULATOR 
     // ==========================================
-    let eveItemsDatabase = [
-        "Vexor", "Thorax", "Megathron", "Dominix", "Raven", "Caracal", "Drake", "Tengu", "Paladin", "Golem", "Kronos", "Vargur", "Ishtar", "Gila", "Orthrus", "Machariel",
-        "Hobgoblin I", "Hobgoblin II", "Hammerhead I", "Hammerhead II", "Ogre I", "Ogre II", 
-        "Hornet I", "Hornet II", "Vespa I", "Vespa II", "Wasp I", "Wasp II",
-        "Acolyte I", "Acolyte II", "Infiltrator I", "Infiltrator II", "Praetor I", "Praetor II",
-        "Warrior I", "Warrior II", "Valkyrie I", "Valkyrie II", "Berserker I", "Berserker II",
-        "Scourge Heavy Missile", "Scourge Fury Heavy Missile", "Inferno Heavy Missile", "Nova Heavy Missile", "Mjolnir Heavy Missile",
-        "Tritanium", "Pyerite", "Mexallon", "Isogen", "Nocxium", "Zydrine", "Megacyte", "Morphite",
-        "Damage Control I", "Damage Control II", "Warp Scrambler I", "Warp Scrambler II", "Multispectrum Energized Membrane II",
-        "Hobgoblin I Blueprint", "R.A.M.- Robotics"
-    ]; 
+    let eveItemsDatabase = []; 
     let popularSystems = ["Jita", "Amarr", "Perimeter", "Dodixie", "Rens", "Hek", "Tash-Murkon Prime", "Ashab", "Oursulaert", "New Caldari", "Sobaseki", "Tama"];
 
     function loadIndustryDatabase() {
-        document.getElementById('dbStatus').innerHTML = '<i class="fas fa-spinner fa-spin"></i> Ładowanie bazy...';
+        const dbStatus = document.getElementById('dbStatus');
+        if(dbStatus) dbStatus.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
+
         fetch('typeids.csv').then(res => res.text()).then(text => {
             const lines = text.split('\n');
             let items = [];
@@ -671,24 +694,25 @@
                 if(!line) continue;
                 let parts = line.split('","');
                 if(parts.length >= 2) {
-                    items.push(parts[1]); 
+                    items.push(parts[1].replace('"', '')); 
                 }
             }
             if(items.length > 1000) {
                 eveItemsDatabase = items; 
-                document.getElementById('dbStatus').innerHTML = '<i class="fas fa-check text-green-500"></i> Baza Gotowa';
-                setTimeout(() => document.getElementById('dbStatus').innerHTML = '', 3000);
+                if(dbStatus) {
+                    dbStatus.innerHTML = '<i class="fas fa-check text-green-500"></i>';
+                    setTimeout(() => dbStatus.innerHTML = '', 3000);
+                }
             }
         }).catch(err => { 
-            document.getElementById('dbStatus').innerHTML = '<i class="fas fa-exclamation-triangle text-yellow-500"></i> Baza awaryjna'; 
+            if(dbStatus) dbStatus.innerHTML = '<i class="fas fa-exclamation-triangle text-yellow-500"></i>'; 
         });
     }
 
-    let typingTimer;
     function localAutocomplete(query, type, inputId) {
         closeAllLists();
         if (query.length < 2) return; 
-        
+
         const lowerQuery = query.toLowerCase();
         let matches = type === 'item' ? 
             eveItemsDatabase.filter(item => {
@@ -733,7 +757,7 @@
     document.getElementById('systemInput').addEventListener('input', function(e) { localAutocomplete(this.value.trim(), 'system', 'systemInput'); });
     document.addEventListener("click", function (e) { closeAllLists(e.target); });
 
-    let appState = { materials: [], runs: 1, me: 10, te: 20, sciPercentage: 0, facilityTax: 0, productSellPrice: 0, baseTime: 0 };
+    let appState = { materials: [], runs: 1, me: 10, te: 10, sciPercentage: 0, facilityTax: 0, productSellPrice: 0, baseTime: 0 };
 
     function formatTime(totalSeconds) {
         const d = Math.floor(totalSeconds / (3600*24));
@@ -754,17 +778,16 @@
         document.getElementById('bpInput').value = itemName;
 
         const systemName = document.getElementById('systemInput').value.trim() || 'Jita';
-        appState.me = parseInt(document.getElementById('meInput').value) || 0;
-        appState.te = parseInt(document.getElementById('teInput').value) || 0;
-        appState.runs = parseInt(document.getElementById('runsInput').value) || 1;
-        appState.facilityTax = parseFloat(document.getElementById('taxInput').value) || 0;
         const stationId = document.getElementById('marketHub').value;
+
+        // Zabezpieczenie danych wejściowych
+        updateMathLive();
 
         if(!itemName) return alert("Wpisz nazwę przedmiotu!");
 
         document.getElementById('col1List').innerHTML = `<li class="p-6 text-center text-yellow-500 animate-pulse font-sans w-full">${globalI18n[currentLang].fetching}</li>`;
         document.getElementById('col2List').innerHTML = `<li class="p-6 text-center text-yellow-500 animate-pulse font-sans w-full">${globalI18n[currentLang].analyzing}</li>`;
-        
+
         try {
             const searchRes = await fetch(`https://www.fuzzwork.co.uk/api/typeid.php?typename=${encodeURIComponent(itemName)}`);
             if (!searchRes.ok) throw new Error(`Błąd wyszukiwania: ${searchRes.status}`);
@@ -786,14 +809,11 @@
                 if (manufacturing) appState.sciPercentage = manufacturing.cost_index * 100;
             }
 
-            // --- PODWÓJNY SPADOCHRON NA OBRAZKI (Statki -> Materiały -> Blueprinty) ---
             const mainImg = document.getElementById('mainIcon');
             mainImg.src = `https://images.evetech.net/types/${typeId}/render?size=256`;
-            
+
             mainImg.onerror = function() {
-                // 2. Jeśli nie ma 3D, próbujemy płaskiej Ikony (Komponenty, R.A.M., Surowce)
                 this.onerror = function() {
-                    // 3. Jeśli Ikona też nie działa, to znaczy, że to Blueprint! Ładujemy grafikę /bp
                     this.onerror = null; 
                     this.src = `https://images.evetech.net/types/${typeId}/bp?size=256`;
                 };
@@ -803,7 +823,7 @@
             const bpRes = await fetch(`https://www.fuzzwork.co.uk/blueprint/api/blueprint.php?typeid=${typeId}`);
             const bpData = await bpRes.json();
             if(!bpData.activityMaterials || !bpData.activityMaterials[1]) throw new Error("Brak receptury produkcyjnej.");
-            
+
             appState.baseTime = bpData.blueprintDetails.times[1] || 0;
             const baseMaterials = bpData.activityMaterials[1];
 
@@ -811,7 +831,7 @@
             typesToFetch.push(typeId);
             const priceRes = await fetch(`https://market.fuzzwork.co.uk/aggregates/?station=${stationId}&types=${typesToFetch.join(',')}`);
             const priceData = await priceRes.json();
-            
+
             appState.productSellPrice = parseFloat(priceData[typeId].sell.min) || 0;
             document.getElementById('itemPriceOutput').innerText = appState.productSellPrice.toLocaleString() + " ISK";
 
@@ -835,9 +855,21 @@
 
     function updateMathLive() {
         if(appState.materials.length === 0) return; 
-        appState.me = parseInt(document.getElementById('meInput').value) || 0;
-        appState.te = parseInt(document.getElementById('teInput').value) || 0;
-        appState.runs = parseInt(document.getElementById('runsInput').value) || 1;
+
+        // Clamp na poziomie 10 dla statystyk BPO i 1 dla Runs
+        let rawMe = parseInt(document.getElementById('meInput').value) || 0;
+        let rawTe = parseInt(document.getElementById('teInput').value) || 0;
+        let rawRuns = parseInt(document.getElementById('runsInput').value) || 1;
+
+        appState.me = Math.max(0, Math.min(10, rawMe));
+        appState.te = Math.max(0, Math.min(10, rawTe)); 
+        appState.runs = Math.max(1, rawRuns);
+        
+        // Wymuszenie w interfejsie
+        document.getElementById('meInput').value = appState.me;
+        document.getElementById('teInput').value = appState.te;
+        document.getElementById('runsInput').value = appState.runs;
+
         appState.facilityTax = parseFloat(document.getElementById('taxInput').value) || 0;
         renderTables(); 
     }
@@ -847,7 +879,7 @@
         appState.materials.forEach((mat, index) => {
             const baseQty = mat.baseQty * appState.runs;
             const effQty = Math.max(appState.runs, Math.ceil(mat.baseQty * (1 - (appState.me / 100))) * appState.runs);
-            
+
             totalMatCost += (effQty * mat.unitPrice);
 
             col1Html += `
@@ -878,7 +910,8 @@
         document.getElementById('col1List').innerHTML = col1Html;
         document.getElementById('col2List').innerHTML = col2Html;
 
-        let totalSeconds = appState.baseTime * (1 - (appState.te / 100)) * appState.runs;
+        // Poprawiony wzór na czas (każdy poziom TE to 2% skrócenia czasu)
+        let totalSeconds = appState.baseTime * (1 - ((appState.te * 2) / 100)) * appState.runs;
 
         const totalTaxRate = appState.sciPercentage + appState.facilityTax; 
         const taxCost = totalMatCost * (totalTaxRate / 100);
@@ -896,10 +929,8 @@
 
         const profitEl = document.getElementById('profitOutput');
         profitEl.innerHTML = `${profit > 0 ? '+' : ''}${profit.toLocaleString('en-US', {maximumFractionDigits: 0})} ISK`;
-        
+
         const isProfitable = profit > 0;
-        
-        // Zmiana kolorów w oknie Zysku w zależności od wyniku
         const profitBox = document.getElementById('profitBox');
         if(isProfitable) {
             profitBox.className = "mt-auto m-5 p-4 bg-green-900/10 border border-green-800/30 rounded-lg text-center";
@@ -910,13 +941,161 @@
             profitEl.className = "block text-2xl font-black text-red-400 tracking-tighter";
             document.getElementById('marginOutput').className = "block text-[10px] text-red-500 font-mono mt-1";
         }
-        
+
         document.getElementById('marginOutput').innerHTML = `( ${margin.toFixed(1)}% Margin )`;
     }
-</script>
 
+    // ==========================================
+    // 4. LOGIKA MINING TOOL (ULTIMATE NINJA)
+    // ==========================================
+    let activeLocs = { high: true, low: true, null: true };
+    function toggleLoc(loc) {
+        activeLocs[loc] = !activeLocs[loc];
+        document.getElementById('loc-' + loc).style.opacity = activeLocs[loc] ? "1" : "0.3";
+        runMiningAnalysis();
+    }
+
+    const baseMiningGroups = {
+        asteroids: [
+            { name: 'Veldspar', vol: 0.1, loc: 'high', crystal: 'Ore Type A', minerals: {34: 415} }, 
+            { name: 'Scordite', vol: 0.15, loc: 'high', crystal: 'Ore Type A', minerals: {34: 346, 35: 173} },
+            { name: 'Pyroxeres', vol: 0.3, loc: 'high', crystal: 'Ore Type A', minerals: {34: 351, 35: 25, 36: 50, 37: 5} },
+            { name: 'Plagioclase', vol: 0.35, loc: 'high', crystal: 'Ore Type A', minerals: {34: 107, 35: 213, 36: 107} },
+            { name: 'Omber', vol: 0.6, loc: 'low', crystal: 'Ore Type B', minerals: {34: 307, 36: 123, 37: 307} },
+            { name: 'Kernite', vol: 1.2, loc: 'low', crystal: 'Ore Type B', minerals: {34: 134, 36: 267, 37: 134} },
+            { name: 'Jaspet', vol: 2.0, loc: 'low', crystal: 'Ore Type B', minerals: {36: 259, 37: 259, 38: 8} },
+            { name: 'Hemorphite', vol: 3.0, loc: 'low', crystal: 'Ore Type B', minerals: {37: 212, 38: 15, 39: 15} },
+            { name: 'Hedbergite', vol: 3.0, loc: 'low', crystal: 'Ore Type B', minerals: {37: 212, 38: 15, 40: 15} },
+            { name: 'Spodumain', vol: 16.0, loc: 'null', crystal: 'Ore Type A', minerals: {34: 56000, 35: 12050, 36: 2100, 37: 450} },
+            { name: 'Dark Ochre', vol: 8.0, loc: 'null', crystal: 'Ore Type C', minerals: {37: 255, 38: 125, 39: 250} },
+            { name: 'Gneiss', vol: 5.0, loc: 'null', crystal: 'Ore Type C', minerals: {36: 2200, 37: 2200, 38: 400} },
+            { name: 'Crokite', vol: 16.0, loc: 'null', crystal: 'Ore Type C', minerals: {34: 21000, 37: 760, 38: 135} },
+            { name: 'Bistot', vol: 16.0, loc: 'null', crystal: 'Ore Type C', minerals: {34: 12000, 39: 100, 40: 100} },
+            { name: 'Arkonor', vol: 16.0, loc: 'null', crystal: 'Ore Type C', minerals: {34: 10000, 38: 166, 40: 333} },
+            { name: 'Mercoxit', vol: 40.0, loc: 'null', crystal: 'Mercoxit', minerals: {11399: 300} }
+        ],
+        ice: [
+            { name: 'Clear Icicle', vol: 1000, loc: 'high', crystal: 'Ice', minerals: {} },
+            { name: 'Blue Ice', vol: 1000, loc: 'high', crystal: 'Ice', minerals: {} },
+            { name: 'Glacial Mass', vol: 1000, loc: 'high', crystal: 'Ice', minerals: {} },
+            { name: 'White Glaze', vol: 1000, loc: 'high', crystal: 'Ice', minerals: {} }
+        ],
+        gas: [
+            { name: 'Fullerite-C50', vol: 1.0, loc: 'null', crystal: 'Harvester', minerals: {} },
+            { name: 'Fullerite-C60', vol: 1.0, loc: 'null', crystal: 'Harvester', minerals: {} },
+            { name: 'Fullerite-C70', vol: 1.0, loc: 'null', crystal: 'Harvester', minerals: {} },
+            { name: 'Fullerite-C28', vol: 2.0, loc: 'null', crystal: 'Harvester', minerals: {} },
+            { name: 'Fullerite-C320', vol: 5.0, loc: 'null', crystal: 'Harvester', minerals: {} },
+            { name: 'Fullerite-C540', vol: 10.0, loc: 'null', crystal: 'Harvester', minerals: {} }
+        ],
+        moon: [
+            { name: 'Zeolites', vol: 10.0, loc: 'null', crystal: 'Moon', minerals: {} },
+            { name: 'Sylvite', vol: 10.0, loc: 'null', crystal: 'Moon', minerals: {} },
+            { name: 'Cobaltite', vol: 10.0, loc: 'null', crystal: 'Moon', minerals: {} },
+            { name: 'Xenotime', vol: 10.0, loc: 'null', crystal: 'Moon', minerals: {} },
+            { name: 'Ytterbite', vol: 10.0, loc: 'null', crystal: 'Moon', minerals: {} }
+        ]
+    };
+
+    async function runMiningAnalysis() {
+        const yieldM3 = parseFloat(document.getElementById('miningYield').value) || 0;
+        const cycle = parseFloat(document.getElementById('miningCycle').value) || 1;
+        const hold = parseFloat(document.getElementById('miningHold').value) || 0;
+        const marketId = document.getElementById('miningMarket').value;
+        const eff = parseFloat(document.getElementById('refineYield').value) / 100;
+        const useComp = document.getElementById('filterCompressed').checked;
+        const results = document.getElementById('miningResults');
+
+        results.innerHTML = `<div class='p-10 text-center animate-pulse text-yellow-500'>${globalI18n[currentLang].fetching}</div>`;
+
+        try {
+            let list = [];
+            if(document.getElementById('filterAsteroids').checked) list.push(...baseMiningGroups.asteroids);
+            if(document.getElementById('filterIce').checked) list.push(...baseMiningGroups.ice);
+            if(document.getElementById('filterGas').checked) list.push(...baseMiningGroups.gas);
+            if(document.getElementById('filterMoon').checked) list.push(...baseMiningGroups.moon);
+            
+            list = list.filter(i => activeLocs[i.loc]);
+
+            if(list.length === 0) {
+                results.innerHTML = `<div class='p-10 text-center text-gray-500'>${currentLang === 'pl' ? 'Brak surowców spełniających kryteria.' : 'No resources selected matching the active filters.'}</div>`;
+                return;
+            }
+
+            const mineralIds = [34, 35, 36, 37, 38, 39, 40, 11399]; 
+            
+            for (let i of list) {
+                const search = useComp ? "Compressed " + i.name : i.name;
+                const r = await fetch(`https://www.fuzzwork.co.uk/api/typeid.php?typename=${encodeURIComponent(search)}`);
+                const d = await r.json();
+                
+                if(d.typeID === 0 && useComp) {
+                    const r2 = await fetch(`https://www.fuzzwork.co.uk/api/typeid.php?typename=${encodeURIComponent(i.name)}`);
+                    const d2 = await r2.json();
+                    i.currentId = d2.typeID;
+                    i.displayName = i.name;
+                } else {
+                    i.currentId = d.typeID;
+                    i.displayName = search;
+                }
+            }
+
+            const allIds = [...new Set([...list.map(i=>i.currentId).filter(id => id > 0), ...mineralIds])].join(',');
+            
+            const pRes = await fetch(`https://market.fuzzwork.co.uk/aggregates/?station=${marketId}&types=${allIds}`);
+            const pData = await pRes.json();
+
+            const m3h = (yieldM3 / cycle) * 3600;
+            
+            const final = list.map(item => {
+                if(!item.currentId || item.currentId === 0) return null;
+                
+                const rawPrice = parseFloat(pData[item.currentId]?.buy.max) || 0;
+                let refValue = 0;
+                
+                if(item.minerals) {
+                    Object.entries(item.minerals).forEach(([mId, q]) => {
+                        refValue += (q * (pData[mId]?.buy.max || 0) * eff) / 100;
+                    });
+                }
+                
+                const best = Math.max(rawPrice, refValue);
+                const iskM3 = best / item.vol;
+                const isRef = refValue > rawPrice;
+                
+                return { ...item, best, iskM3, iskh: m3h * iskM3, isRef };
+            }).filter(i => i !== null).sort((a,b) => b.iskh - a.iskh);
+
+            results.innerHTML = "";
+            const locColors = { high: 'text-green-500', low: 'text-orange-500', null: 'text-red-500' };
+
+            final.forEach((i, idx) => {
+                results.innerHTML += `
+                    <div class="grid grid-cols-12 gap-2 p-3 ${idx===0?'bg-yellow-500/10 border-yellow-500/50':'bg-[#09090b] border-gray-800/50'} rounded border text-xs font-mono items-center text-right transition-all">
+                        <div class="col-span-4 text-left flex flex-col">
+                            <div class="font-bold flex items-center gap-2 ${idx===0?'text-yellow-400':'text-gray-100'}">
+                                <img src="https://images.evetech.net/types/${i.currentId}/icon?size=32" class="w-6 h-6 rounded border border-gray-800">
+                                <span class="truncate">${idx===0?'🥇':''} ${i.displayName} ${i.isRef?'<i class="fas fa-fire text-orange-500" title="Better to Refine!"></i>':''}</span>
+                            </div>
+                            <div class="flex gap-2 mt-1">
+                                <span class="text-[8px] uppercase px-1 bg-gray-800 text-gray-400 rounded">${i.crystal}</span>
+                                <span class="text-[8px] uppercase font-black ${locColors[i.loc]}">${i.loc}</span>
+                            </div>
+                        </div>
+                        <div class="col-span-2 text-gray-300">
+                            ${Math.floor(i.best).toLocaleString()}
+                            <div class="text-[9px] text-gray-600">${i.isRef?globalI18n[currentLang].minRefined:globalI18n[currentLang].minRaw}</div>
+                        </div>
+                        <div class="col-span-2 text-gray-400">${Math.floor(i.iskM3).toLocaleString()}</div>
+                        <div class="col-span-2 text-yellow-500 font-bold">${Math.floor(i.iskh).toLocaleString()}</div>
+                        <div class="col-span-2 text-gray-200 font-bold">
+                            ${((hold/i.vol)*i.best/1000000).toFixed(1)}M ISK
+                            <div class="text-[9px] text-gray-600">${Math.floor((hold / (yieldM3 / cycle)) / 60)} ${globalI18n[currentLang].minMin}</div>
+                        </div>
+                    </div>`;
+            });
+        } catch(e) { results.innerHTML = `<div class="p-10 text-center text-red-500 font-sans">Analysis Error: ${e.message}</div>`; }
+    }
+</script>
 </body>
 </html>
-
-
-
