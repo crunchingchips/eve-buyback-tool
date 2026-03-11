@@ -63,8 +63,8 @@
                 <div class="flex mt-2 gap-2">
                     <div id="tab-loot" class="nav-tab active" onclick="openTab('loot')">Loot Analyzer</div>
                     <div id="tab-industry" class="nav-tab" onclick="openTab('industry')">Industry Tool</div>
+                    <div id="tab-mining" class="nav-tab" onclick="openTab('mining')">Mining Tool</div></div>
                 </div>
-            </div>
             <div class="flex gap-4 pb-1 absolute top-0 right-0 md:relative">
                 <button onclick="setGlobalLanguage('pl')" id="lang-pl" class="text-2xl transition-all cursor-pointer filter grayscale opacity-40 hover:opacity-100 hover:grayscale-0" title="Polski">🇵🇱</button>
                 <button onclick="setGlobalLanguage('en')" id="lang-en" class="text-2xl transition-all cursor-pointer filter drop-shadow-[0_0_8px_rgba(255,255,255,0.6)]" title="English">🇬🇧</button>
@@ -270,7 +270,91 @@
                 </div>
             </div>
         </div>
+        <div id="content-mining" class="hidden animate-fade-in">
+            <p class="text-xs text-gray-400 font-mono mb-4">Ore, Ice & Gas Profitability Ranking</p>
+            <div class="grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-5 gap-6">
+                
+                <div class="xl:col-span-2 flex flex-col gap-4">
+                    
+                    <div class="bg-[#121214] rounded-xl border border-gray-700/80 p-5 panel-glow">
+                        <div class="text-[11px] text-gray-400 uppercase font-bold mb-4 tracking-widest border-b border-gray-800/50 pb-2">Ship Capabilities</div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-[10px] text-gray-500 uppercase font-bold mb-1">Yield (m³ / cycle)</label>
+                                <input type="number" id="miningYield" value="1000" class="w-full bg-[#09090b] border border-gray-600 p-2 font-mono text-sm text-gray-200 rounded outline-none focus:border-yellow-500 transition-colors">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] text-gray-500 uppercase font-bold mb-1">Cycle Time (s)</label>
+                                <input type="number" id="miningCycle" value="60" class="w-full bg-[#09090b] border border-gray-600 p-2 font-mono text-sm text-gray-200 rounded outline-none focus:border-yellow-500 transition-colors">
+                            </div>
+                            <div class="col-span-2">
+                                <label class="block text-[10px] text-gray-500 uppercase font-bold mb-1">Ore Hold (m³)</label>
+                                <input type="number" id="miningHold" value="5000" class="w-full bg-[#09090b] border border-gray-600 p-2 font-mono text-sm text-gray-200 rounded outline-none focus:border-yellow-500 transition-colors">
+                            </div>
+                        </div>
+                    </div>
 
+                    <div class="bg-[#121214] rounded-xl border border-gray-700/80 p-5 panel-glow flex-grow flex flex-col">
+                        <div class="text-[11px] text-gray-400 uppercase font-bold mb-4 tracking-widest border-b border-gray-800/50 pb-2">Market & Filters</div>
+                        
+                        <label class="block text-[10px] text-gray-500 uppercase font-bold mb-1 mt-1">Target Market</label>
+                        <select id="miningMarket" class="w-full bg-[#09090b] border border-gray-600 p-2 font-mono text-sm text-yellow-400 rounded outline-none cursor-pointer focus:border-yellow-500 transition-colors mb-5">
+                            <option value="60003760">Jita (4-4 Caldari Navy)</option>
+                            <option value="60008494">Amarr (Emperor Family)</option>
+                            <option value="60011866">Dodixie (Fed. Navy)</option>
+                            <option value="60004588">Rens (Brutor Tribe)</option>
+                            <option value="60005686">Hek (Boundless Creation)</option>
+                        </select>
+
+                        <label class="block text-[10px] text-gray-500 uppercase font-bold mb-3">Resource Types</label>
+                        <div class="flex flex-col gap-3 font-mono text-xs text-gray-300 mb-6">
+                            <label class="flex items-center gap-2 cursor-pointer hover:text-white transition-colors"><input type="checkbox" id="filterAsteroids" checked class="accent-yellow-500 w-4 h-4"> Standard Ore (Asteroids)</label>
+                            <label class="flex items-center gap-2 cursor-pointer hover:text-white transition-colors"><input type="checkbox" id="filterIce" checked class="accent-yellow-500 w-4 h-4"> Ice</label>
+                            <label class="flex items-center gap-2 cursor-pointer hover:text-white transition-colors"><input type="checkbox" id="filterMoon" checked class="accent-yellow-500 w-4 h-4"> Moon Ore</label>
+                            <label class="flex items-center gap-2 cursor-pointer hover:text-white transition-colors"><input type="checkbox" id="filterGas" checked class="accent-yellow-500 w-4 h-4"> Gas (K-Space & WH)</label>
+                        </div>
+                        
+                        <div class="mt-auto">
+                            <button id="calcMiningBtn" class="w-full bg-yellow-500 hover:bg-yellow-400 text-black font-black py-4 uppercase transition-all active:scale-[0.98] text-sm tracking-wide shadow-lg rounded">Calculate Profit</button>
+                        </div>
+                    </div>
+
+                </div>
+
+                <div class="xl:col-span-3 flex flex-col gap-4">
+                    <div class="h-[600px] xl:h-[685px] bg-[#121214] rounded-xl border border-gray-700/80 overflow-hidden panel-glow flex flex-col">
+                        <div class="bg-[#18181b] p-3 px-5 border-b border-gray-700 flex justify-between items-center z-10">
+                            <span class="text-yellow-500 font-bold uppercase tracking-widest text-[11px]">Profitability Ranking</span>
+                            <span class="text-gray-400 font-mono text-[10px]">Sorted by ISK / Hour</span>
+                        </div>
+                        
+                        <div class="grid grid-cols-12 gap-2 p-3 bg-[#18181b] border-b border-gray-800 text-[10px] font-black text-gray-500 uppercase tracking-wider text-right pr-4">
+                            <div class="col-span-4 text-left">Resource</div>
+                            <div class="col-span-2">Price (Unit)</div>
+                            <div class="col-span-2">ISK / m³</div>
+                            <div class="col-span-2 text-yellow-500">ISK / Hour</div>
+                            <div class="col-span-2">Time to Fill</div>
+                        </div>
+
+                        <div id="miningResults" class="flex-grow overflow-y-auto custom-scroll p-2 flex flex-col gap-1">
+                            
+                            <div class="grid grid-cols-12 gap-2 p-3 bg-[#09090b] rounded border border-gray-800/50 text-xs font-mono items-center text-right hover:border-gray-600 transition-colors opacity-50">
+                                <div class="col-span-4 text-left font-bold text-gray-200 flex items-center gap-3">
+                                    <div class="w-6 h-6 bg-gray-800 rounded"></div>
+                                    Waiting for scan...
+                                </div>
+                                <div class="col-span-2 text-gray-500">--</div>
+                                <div class="col-span-2 text-gray-500">--</div>
+                                <div class="col-span-2 text-gray-500">--</div>
+                                <div class="col-span-2 text-gray-600 text-[10px]">--</div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
     </div>
 
 <script>
@@ -831,4 +915,5 @@
 
 </body>
 </html>
+
 
