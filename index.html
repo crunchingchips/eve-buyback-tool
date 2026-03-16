@@ -24,6 +24,26 @@
     <meta property="og:image" content="https://images.evetech.net/types/34/icon?size=256"> <meta name="twitter:card" content="summary">
     <meta name="twitter:title" content="EVE Online MultiTool - No SSO">
     <meta name="twitter:description" content="Instant EVE Online Loot Appraiser, Industry & Mining Calculator. Safe and private.">
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "EVE Online MultiTool",
+      "url": "https://crunchingchips.github.io/eve-buyback-tool/",
+      "description": "Fast, client-side EVE Online MultiTool featuring a Loot Appraiser, Industry Calculator, and Mining Analyzer. Safe, private, and requires no EVE SSO.",
+      "applicationCategory": "GameApplication",
+      "operatingSystem": "Web Browser",
+      "author": {
+        "@type": "Person",
+        "name": "CrunchingChips"
+      },
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      }
+    }
+    </script>
     <link rel="canonical" href="https://crunchingchips.github.io/eve-buyback-tool/" />
 
     <meta name="robots" content="index, follow">
@@ -399,6 +419,11 @@
 
         document.getElementById('content-' + tabName).classList.remove('hidden');
         document.getElementById('tab-' + tabName).classList.add('active');
+        if (typeof gtag === 'function') {
+            gtag('event', 'tab_click', {
+                'tab_name': tabName
+            });
+        }
     }
 
     const globalI18n = {
@@ -498,7 +523,9 @@
         const zeroTable = document.getElementById('zeroTable');
         const finalNet = document.getElementById('finalNet');
         const netLabel = document.getElementById('netLabel');
-        
+        if (typeof gtag === 'function') {
+            gtag('event', 'use_tool', { 'tool_name': 'loot_scanner' });
+        }
         const regionId = document.getElementById('marketRegion').value;
         let taxRate = parseFloat(document.getElementById('lootTaxRate').value);
         if(isNaN(taxRate) || taxRate < 0) taxRate = 0;
@@ -659,6 +686,9 @@
 
     function copyReport() {
         if (!globalReportText) return;
+        if (typeof gtag === 'function') {
+            gtag('event', 'copy_report', { 'tool_name': 'loot_scanner' });
+        }
         navigator.clipboard.writeText(globalReportText).then(() => {
             const btn = document.getElementById('copyBtn');
             const originalText = btn.innerText;
@@ -795,7 +825,9 @@
 
         const systemName = document.getElementById('systemInput').value.trim() || 'Jita';
         const stationId = document.getElementById('marketHub').value;
-
+        if (typeof gtag === 'function') {
+            gtag('event', 'use_tool', { 'tool_name': 'industry_calc' });
+        }
         // Zabezpieczenie danych wejściowych
         updateMathLive();
 
@@ -1021,7 +1053,9 @@
         const eff = parseFloat(document.getElementById('refineYield').value) / 100;
         const useComp = document.getElementById('filterCompressed').checked;
         const results = document.getElementById('miningResults');
-
+        if (typeof gtag === 'function') {
+            gtag('event', 'use_tool', { 'tool_name': 'mining_calc' });
+        }
         results.innerHTML = `<div class='p-10 text-center animate-pulse text-yellow-500'>${globalI18n[currentLang].fetching}</div>`;
 
         try {
