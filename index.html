@@ -382,7 +382,7 @@
                 </div>
 
                 <div class="xl:col-span-3 flex flex-col gap-4">
-                    <div class="h-[650px] bg-[#121214] rounded-xl border border-gray-700/80 overflow-hidden panel-glow flex flex-col">
+                    <div class="flex-1 min-h-[670px] bg-[#121214] rounded-xl border border-gray-700/80 overflow-hidden panel-glow flex flex-col">
                         <div class="bg-[#18181b] p-3 px-5 border-b border-gray-700 flex justify-between items-center z-10">
                             <span class="text-yellow-500 font-bold uppercase tracking-widest text-[11px]" data-i18n="minRank">Intelligence Ranking</span>
                             <span class="text-gray-400 font-mono text-[10px]" data-i18n="minSort">Sorted by ISK / Hour</span>
@@ -1576,8 +1576,9 @@
                     + "<span class='text-[8px] uppercase font-black " + (locColors[item.loc] || 'text-gray-500') + "'>" + locations + "</span>"
                     + "<span class='text-[8px] uppercase px-1 bg-gray-900 text-gray-500 rounded'>" + sourceLabel + "</span>"
                     + "</div></div>"
-                    + "<div class='col-span-2 text-gray-300'>" + Number(item.best).toLocaleString(numberLocale, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-                    + "<div class='text-[9px] text-gray-600'>" + (item.isRef ? globalI18n[currentLang].minRefined : globalI18n[currentLang].minRaw) + "</div></div>"
+                    + "<div class='col-span-2 text-gray-100'>"
+                    + "<div class='text-sm font-black tracking-tight'>" + Number(item.best).toLocaleString(numberLocale, { minimumFractionDigits: 3, maximumFractionDigits: 3 }) + "</div>"
+                    + "<div class='mt-1 inline-flex max-w-full items-center rounded-md border px-2 py-1 text-[10px] font-bold leading-tight " + (item.isRef ? "border-sky-700/70 bg-sky-950/70 text-sky-300" : "border-emerald-700/70 bg-emerald-950/70 text-emerald-300") + "'>" + (item.isRef ? globalI18n[currentLang].minRefined : globalI18n[currentLang].minRaw) + "</div></div>"
                     + "<div class='col-span-2 text-gray-400'>" + Number(item.iskM3).toLocaleString(numberLocale, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + "</div>"
                     + "<div class='col-span-2 text-yellow-500 font-bold'>" + Math.floor(item.iskh).toLocaleString() + "</div>"
                     + "<div class='col-span-2 text-gray-200 font-bold'>" + ((hold / item.vol) * item.best / 1000000).toLocaleString(numberLocale, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + "M ISK"
