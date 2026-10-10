@@ -382,7 +382,7 @@
                 </div>
 
                 <div class="xl:col-span-3 flex flex-col gap-4">
-                    <div class="flex-1 min-h-[670px] bg-[#121214] rounded-xl border border-gray-700/80 overflow-hidden panel-glow flex flex-col">
+                    <div class="h-[650px] max-h-[calc(100vh-190px)] min-h-0 bg-[#121214] rounded-xl border border-gray-700/80 overflow-hidden panel-glow flex flex-col">
                         <div class="bg-[#18181b] p-3 px-5 border-b border-gray-700 flex justify-between items-center z-10">
                             <span class="text-yellow-500 font-bold uppercase tracking-widest text-[11px]" data-i18n="minRank">Intelligence Ranking</span>
                             <span class="text-gray-400 font-mono text-[10px]" data-i18n="minSort">Sorted by ISK / Hour</span>
@@ -396,7 +396,7 @@
                             <div class="col-span-2" data-i18n="minCol5">Hold Value</div>
                         </div>
 
-                        <div id="miningResults" class="flex-grow overflow-y-auto custom-scroll p-2 flex flex-col gap-1">
+                        <div id="miningResults" class="flex-1 min-h-0 overflow-y-auto custom-scroll p-2 flex flex-col gap-1">
                             <div class="grid grid-cols-12 gap-2 p-3 bg-[#09090b] rounded border border-gray-800/50 text-xs font-mono items-center text-right hover:border-gray-600 transition-colors opacity-50">
                                 <div class="col-span-4 text-left font-bold text-gray-200 flex items-center gap-3">
                                     <div class="w-6 h-6 bg-gray-800 rounded"></div>
@@ -475,7 +475,7 @@
             minFilters: "Market & Filters", minTarget: "Target Market", minRef: "Refining Yield (%)", minLoc: "Location Filter",
             cbAst: "Standard Ore", cbIce: "Ice", cbMoon: "Moon Ore", cbGas: "Gas (WH/K-Space)", cbComp: "Use Compressed Prices",
             minRank: "Intelligence Ranking", minSort: "Sorted by ISK / Hour", minCol1: "Resource & Logic", minCol2: "Best option / unit", minCol5: "Hold Value",
-            minRaw: "Highest buy order", minRefined: "Refined", minMin: "min", minCalcBtn: "Calculate Profit"
+            minRaw: "Raw ore buy order", minRefined: "Refining value", minMin: "min", minCalcBtn: "Calculate Profit"
         },
         pl: {
             tabLoot: "Skaner Łupów", tabInd: "Kalkulator Produkcji", tabMin: "Kalkulator Górniczy",
@@ -504,11 +504,67 @@
             minFilters: "Rynek i filtry", minTarget: "Docelowy rynek", minRef: "Wydajność przetopu (%)", minLoc: "Filtr lokalizacji",
             cbAst: "Rudy asteroidowe", cbIce: "Lód (Ice)", cbMoon: "Rudy księżycowe", cbGas: "Gaz (WH / K-Space)", cbComp: "Użyj cen skompresowanych",
             minRank: "Ranking Opłacalności", minSort: "Sortowane wg ISK / Godzinę", minCol1: "Surowiec i Logika", minCol2: "Najlepsza opcja / szt.", minCol5: "Wartość Ładowni",
-            minRaw: "Zlecenie kupna", minRefined: "Przetopione", minMin: "min", minCalcBtn: "Oblicz Zysk"
+            minRaw: "Zlecenie kupna rudy", minRefined: "Wartość po przetopie", minMin: "min", minCalcBtn: "Oblicz Zysk"
         }
     };
     
     let currentLang = 'en';
+
+    const miningResultLabels = {
+        en: {
+            sourceRaw: "RAW ORE · BUY ORDER",
+            sourceCompressed: "COMPRESSED ORE · BUY ORDER",
+            sourceRawFallback: "RAW ORE · COMPRESSED PRICE UNAVAILABLE",
+            decisionSell: "SELL RAW ORE",
+            decisionRefine: "REFINE ORE",
+            decisionMissing: "PRICE DATA MISSING",
+            optionOre: "Raw ore buy order",
+            optionRefine: "Refining value",
+            detailOre: "Ore:",
+            detailRefine: "Refine:"
+        },
+        pl: {
+            sourceRaw: "SUROWA RUDA · ZLECENIE KUPNA",
+            sourceCompressed: "SKOMPRESOWANA RUDA · ZLECENIE KUPNA",
+            sourceRawFallback: "SUROWA RUDA · BRAK CENY SKOMP.",
+            decisionSell: "SPRZEDAJ RUDĘ",
+            decisionRefine: "PRZETOP RUDĘ",
+            decisionMissing: "BRAK DANYCH CENOWYCH",
+            optionOre: "Zlecenie kupna rudy",
+            optionRefine: "Wartość po przetopie",
+            detailOre: "Ruda:",
+            detailRefine: "Przetop:"
+        }
+    };
+
+    function refreshMiningLocalizedLabels() {
+        const labels = miningResultLabels[currentLang] || miningResultLabels.en;
+        const values = {
+            source: {
+                raw: labels.sourceRaw,
+                compressed: labels.sourceCompressed,
+                'raw-fallback': labels.sourceRawFallback
+            },
+            decision: {
+                sell: labels.decisionSell,
+                refine: labels.decisionRefine,
+                missing: labels.decisionMissing
+            },
+            option: {
+                ore: labels.optionOre,
+                refine: labels.optionRefine
+            },
+            detail: {
+                ore: labels.detailOre,
+                refine: labels.detailRefine
+            }
+        };
+        document.querySelectorAll('[data-mining-label]').forEach(element => {
+            const kind = element.getAttribute('data-mining-label');
+            const value = element.getAttribute('data-mining-value');
+            if (values[kind] && values[kind][value]) element.textContent = values[kind][value];
+        });
+    }
 
     function setGlobalLanguage(lang) {
         currentLang = lang;
@@ -531,6 +587,7 @@
             if(d[el.getAttribute('data-i18n')]) el.innerHTML = d[el.getAttribute('data-i18n')];
         });
         if (typeof renderSkillSelectors === 'function') renderSkillSelectors();
+        if (typeof refreshMiningLocalizedLabels === 'function') refreshMiningLocalizedLabels();
         if(appState.materials.length > 0) renderTables();
     }
 
@@ -1546,43 +1603,62 @@
 
             const numberLocale = currentLang === 'pl' ? 'pl-PL' : 'en-US';
             final.forEach((item, index) => {
-                const sourceLabel = item.priceSource === 'compressed'
-                    ? (currentLang === 'pl' ? 'ZLECENIE KUPNA · RUDA SKOMPRESOWANA' : 'COMPRESSED ORE BUY ORDER')
-                    : item.priceSource === 'raw-fallback'
-                        ? (currentLang === 'pl' ? 'ZLECENIE KUPNA · SUROWA RUDA (BRAK CENY COMP.)' : 'RAW ORE BUY ORDER (COMPRESSED UNAVAILABLE)')
-                        : (currentLang === 'pl' ? 'ZLECENIE KUPNA · SUROWA RUDA' : 'RAW ORE BUY ORDER');
-                const locations = (Array.isArray(item.locs) ? item.locs : [item.loc]).filter(Boolean).join('/');
-                const decisionLabel = item.marketPrice <= 0 && item.refineValue <= 0
-                    ? (currentLang === 'pl' ? 'BRAK DANYCH CENOWYCH' : 'NO PRICE DATA')
+                const sourceKey = item.priceSource === 'compressed'
+                    ? 'compressed'
+                    : item.priceSource === 'raw-fallback' ? 'raw-fallback' : 'raw';
+                const sourceLabel = sourceKey === 'compressed'
+                    ? (currentLang === 'pl' ? miningResultLabels.pl.sourceCompressed : miningResultLabels.en.sourceCompressed)
+                    : sourceKey === 'raw-fallback'
+                        ? (currentLang === 'pl' ? miningResultLabels.pl.sourceRawFallback : miningResultLabels.en.sourceRawFallback)
+                        : (currentLang === 'pl' ? miningResultLabels.pl.sourceRaw : miningResultLabels.en.sourceRaw);
+                const locations = (Array.isArray(item.locs) ? item.locs : [item.loc])
+                    .filter(Boolean)
+                    .map(location => ({ high: 'HIGH-SEC', low: 'LOW-SEC', null: 'NULL/WH' }[location] || String(location).toUpperCase())
+                    .join(' / ');
+                const hasPriceData = item.marketPrice > 0 || item.refineValue > 0;
+                const decisionKey = !hasPriceData ? 'missing' : item.isRef ? 'refine' : 'sell';
+                const decisionLabel = !hasPriceData
+                    ? (currentLang === 'pl' ? miningResultLabels.pl.decisionMissing : miningResultLabels.en.decisionMissing)
                     : item.isRef
-                        ? (currentLang === 'pl' ? 'LEPIEJ PRZETOPIĆ' : 'REFINE FOR MORE')
-                        : (currentLang === 'pl' ? 'LEPIEJ SPRZEDAĆ RUDĘ' : 'SELL ORE FOR MORE');
-                const decisionClass = item.marketPrice <= 0 && item.refineValue <= 0
-                    ? 'bg-gray-800 text-gray-400'
+                        ? (currentLang === 'pl' ? miningResultLabels.pl.decisionRefine : miningResultLabels.en.decisionRefine)
+                        : (currentLang === 'pl' ? miningResultLabels.pl.decisionSell : miningResultLabels.en.decisionSell);
+                const decisionClass = !hasPriceData
+                    ? 'border-gray-700 bg-gray-800 text-gray-300'
                     : item.isRef
-                        ? 'bg-sky-900/50 text-sky-300'
-                        : 'bg-emerald-900/50 text-emerald-300';
+                        ? 'border-sky-700/70 bg-sky-950/70 text-sky-300'
+                        : 'border-emerald-700/70 bg-emerald-950/70 text-emerald-300';
+                const sourceClass = sourceKey === 'compressed'
+                    ? 'border-cyan-700/70 bg-cyan-950/70 text-cyan-200'
+                    : sourceKey === 'raw-fallback'
+                        ? 'border-amber-700/70 bg-amber-950/70 text-amber-200'
+                        : 'border-gray-700 bg-gray-800 text-gray-200';
+                const numberLocale = currentLang === 'pl' ? 'pl-PL' : 'en-US';
                 const orePriceText = Number(item.marketPrice).toLocaleString(numberLocale, { minimumFractionDigits: 3, maximumFractionDigits: 3 });
                 const refinedPriceText = Number(item.refineValue).toLocaleString(numberLocale, { minimumFractionDigits: 3, maximumFractionDigits: 3 });
                 const iconTypeId = item.typeId || item.currentId;
                 results.innerHTML +=
-                    "<div class='grid grid-cols-12 gap-2 p-3 " + (index === 0 ? "bg-yellow-500/10 border-yellow-500/50" : "bg-[#09090b] border-gray-800/50") + " rounded border text-xs font-mono items-center text-right transition-all'>"
-                    + "<div class='col-span-4 text-left flex flex-col'>"
+                    "<div class='grid grid-cols-12 gap-2 p-3 " + (index === 0 ? "bg-yellow-500/10 border-yellow-500/50" : "bg-[#09090b] border-gray-800/50") + " rounded border text-xs font-mono items-center transition-all'>"
+                    + "<div class='col-span-4 min-w-0 text-left flex flex-col'>"
                     + "<div class='font-bold flex items-center gap-2 " + (index === 0 ? "text-yellow-400" : "text-gray-100") + "'>"
-                    + "<img src='https://images.evetech.net/types/" + iconTypeId + "/icon?size=32' class='w-6 h-6 rounded border border-gray-800' onerror=\"this.style.display='none'\">"
+                    + "<img src='https://images.evetech.net/types/" + iconTypeId + "/icon?size=32' class='w-6 h-6 rounded border border-gray-800 shrink-0' onerror=\\"this.style.display='none'\\">"
                     + "<span class='truncate'>" + (index === 0 ? '🥇 ' : '') + item.displayName + "</span></div>"
-                    + "<div class='flex flex-wrap gap-2 mt-1'>"
-                    + "<span class='text-[8px] uppercase px-1 bg-gray-800 text-gray-400 rounded'>" + item.crystal + "</span>"
-                    + "<span class='text-[8px] uppercase font-black " + (locColors[item.loc] || 'text-gray-500') + "'>" + locations + "</span>"
-                    + "<span class='text-[8px] uppercase px-1 bg-gray-900 text-gray-500 rounded'>" + sourceLabel + "</span>"
+                    + "<div class='flex flex-wrap gap-1.5 mt-2'>"
+                    + "<span class='text-[9px] uppercase font-bold px-2 py-1 border border-gray-700 bg-gray-800 text-gray-200 rounded'>" + item.crystal + "</span>"
+                    + "<span class='text-[9px] uppercase font-black px-2 py-1 rounded bg-gray-900 " + (locColors[item.loc] || 'text-gray-400') + "'>" + locations + "</span>"
+                    + "<span data-mining-label='source' data-mining-value='" + sourceKey + "' class='text-[9px] uppercase font-bold px-2 py-1 border rounded leading-relaxed " + sourceClass + "'>" + sourceLabel + "</span>"
+                    + "<span data-mining-label='decision' data-mining-value='" + decisionKey + "' class='text-[10px] uppercase font-black px-2 py-1 border rounded leading-tight " + decisionClass + "'>" + decisionLabel + "</span>"
                     + "</div></div>"
-                    + "<div class='col-span-2 text-gray-100'>"
+                    + "<div class='col-span-2 min-w-0 text-gray-100'>"
                     + "<div class='text-sm font-black tracking-tight'>" + Number(item.best).toLocaleString(numberLocale, { minimumFractionDigits: 3, maximumFractionDigits: 3 }) + "</div>"
-                    + "<div class='mt-1 inline-flex max-w-full items-center rounded-md border px-2 py-1 text-[10px] font-bold leading-tight " + (item.isRef ? "border-sky-700/70 bg-sky-950/70 text-sky-300" : "border-emerald-700/70 bg-emerald-950/70 text-emerald-300") + "'>" + (item.isRef ? globalI18n[currentLang].minRefined : globalI18n[currentLang].minRaw) + "</div></div>"
-                    + "<div class='col-span-2 text-gray-400'>" + Number(item.iskM3).toLocaleString(numberLocale, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + "</div>"
-                    + "<div class='col-span-2 text-yellow-500 font-bold'>" + Math.floor(item.iskh).toLocaleString() + "</div>"
-                    + "<div class='col-span-2 text-gray-200 font-bold'>" + ((hold / item.vol) * item.best / 1000000).toLocaleString(numberLocale, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + "M ISK"
-                    + "<div class='text-[9px] text-gray-600'>" + (Math.ceil(hold / yieldM3) * cycle / 60) + " " + globalI18n[currentLang].minMin + "</div></div></div>";
+                    + "<div data-mining-label='option' data-mining-value='" + (item.isRef ? 'refine' : 'ore') + "' class='mt-1 inline-flex max-w-full items-center rounded-md border px-2 py-1 text-[10px] font-bold leading-tight " + decisionClass + "'>" + (item.isRef ? (currentLang === 'pl' ? miningResultLabels.pl.optionRefine : miningResultLabels.en.optionRefine) : (currentLang === 'pl' ? miningResultLabels.pl.optionOre : miningResultLabels.en.optionOre)) + "</div>"
+                    + "<div class='mt-2 space-y-1 text-[10px] leading-tight font-normal text-gray-300'>"
+                    + "<div><span data-mining-label='detail' data-mining-value='ore' class='text-gray-500'>" + (currentLang === 'pl' ? miningResultLabels.pl.detailOre : miningResultLabels.en.detailOre) + "</span> " + orePriceText + "</div>"
+                    + "<div><span data-mining-label='detail' data-mining-value='refine' class='text-gray-500'>" + (currentLang === 'pl' ? miningResultLabels.pl.detailRefine : miningResultLabels.en.detailRefine) + "</span> " + refinedPriceText + "</div>"
+                    + "</div></div>"
+                    + "<div class='col-span-2 text-gray-300 text-right'>" + Number(item.iskM3).toLocaleString(numberLocale, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + "</div>"
+                    + "<div class='col-span-2 text-yellow-300 font-bold text-right'>" + Math.floor(item.iskh).toLocaleString(numberLocale) + "</div>"
+                    + "<div class='col-span-2 text-gray-100 font-bold text-right'>" + ((hold / item.vol) * item.best / 1000000).toLocaleString(numberLocale, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + "M ISK"
+                    + "<div class='text-[10px] text-gray-400 font-normal mt-1'>" + (Math.ceil(hold / yieldM3) * cycle / 60).toLocaleString(numberLocale, { maximumFractionDigits: 1 }) + " " + globalI18n[currentLang].minMin + "</div></div></div>";
             });
 
             results.insertAdjacentHTML('beforeend',
