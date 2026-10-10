@@ -419,6 +419,13 @@
     // Stan referencji inicjalizujemy przed rejestracją obsługi UI, aby uniknąć błędu TDZ.
     let miningReferenceDataPromise = null;
     const miningReferenceTypePromises = new Map();
+    let miningReferenceRequestQueue = Promise.resolve();
+    let miningReferenceNextRequestAt = 0;
+    let miningReferenceRequestGapMs = 350;
+
+    function miningDelay(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
 
     // ==========================================
     // 1. WSPÓLNE LOGIKI (TABS & JĘZYK)
@@ -1112,15 +1119,64 @@
                 // Continue with the network request if cached data cannot be read.
             }
 
-            const response = await fetch('https://ref-data.everef.net/types/' + id);
-            if (!response.ok) {
-                throw new Error('EVE Ref lookup failed for type ' + id + ' (HTTP ' + response.status + ')');
-            }
+            // The reference API rate-limits bursts. Serialize requests, space them out,
+            // and honor Retry-After (or exponential backoff) instead of failing on the first 429.
+            const queuedRequest = miningReferenceRequestQueue.then(async () => {
+                let data = null;
 
-            const data = await response.json();
-            if (!data || Number(data.type_id) !== id) {
-                throw new Error('EVE Ref returned invalid data for type ' + id);
-            }
+                for (let attempt = 0; attempt <= 5; attempt++) {
+                    const waitForSlot = Math.max(0, miningReferenceNextRequestAt - Date.now());
+                    if (waitForSlot > 0) await miningDelay(waitForSlot);
+                    miningReferenceNextRequestAt = Date.now() + miningReferenceRequestGapMs;
+
+                    const response = await fetch('https://ref-data.everef.net/types/' + id);
+
+                    if (response.status === 429 || [500, 502, 503, 504].includes(response.status)) {
+                        if (attempt === 5) {
+                            throw new Error('EVE Ref lookup failed for type ' + id + ' (HTTP ' + response.status + ' after retries)');
+                        }
+
+                        const retryAfter = response.headers.get('Retry-After');
+                        const retrySeconds = retryAfter !== null ? Number(retryAfter) : NaN;
+                        const retryDate = retryAfter !== null && !Number.isFinite(retrySeconds)
+                            ? Date.parse(retryAfter)
+                            : NaN;
+                        const headerDelay = Number.isFinite(retrySeconds) && retrySeconds >= 0
+                            ? retrySeconds * 1000
+                            : (Number.isFinite(retryDate) ? Math.max(0, retryDate - Date.now()) : null);
+                        const backoffDelay = headerDelay !== null
+                            ? headerDelay
+                            : Math.min(30000, 1500 * (2 ** attempt));
+
+                        if (response.status === 429) {
+                            // Adapt the request rate for the rest of this page session.
+                            miningReferenceRequestGapMs = Math.min(2000, Math.max(1000, miningReferenceRequestGapMs * 2));
+                        }
+                        miningReferenceNextRequestAt = Math.max(
+                            miningReferenceNextRequestAt,
+                            Date.now() + backoffDelay
+                        );
+                        await miningDelay(backoffDelay + Math.floor(Math.random() * 250));
+                        continue;
+                    }
+
+                    if (!response.ok) {
+                        throw new Error('EVE Ref lookup failed for type ' + id + ' (HTTP ' + response.status + ')');
+                    }
+
+                    data = await response.json();
+                    break;
+                }
+
+                if (!data || Number(data.type_id) !== id) {
+                    throw new Error('EVE Ref returned invalid data for type ' + id);
+                }
+                return data;
+            });
+
+            // Keep the queue usable after an individual request fails.
+            miningReferenceRequestQueue = queuedRequest.catch(() => {});
+            const data = await queuedRequest;
 
             try {
                 localStorage.setItem(cacheKey, JSON.stringify({ cachedAt: Date.now(), data: data }));
