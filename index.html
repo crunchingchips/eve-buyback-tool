@@ -1086,6 +1086,82 @@
 
     const MINING_REF_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 
+    // Reuse reference-data requests within the current page and cache responses
+    // between visits. Storage may be unavailable in private/restricted contexts.
+    async function fetchMiningReferenceType(typeId) {
+        const id = Number(typeId);
+        if (!Number.isInteger(id) || id <= 0) {
+            throw new Error('Invalid EVE Ref type ID: ' + typeId);
+        }
+
+        if (miningReferenceTypePromises.has(id)) {
+            return miningReferenceTypePromises.get(id);
+        }
+
+        const request = (async () => {
+            const cacheKey = 'eve-multitool:mining-ref-type:' + id;
+            try {
+                const cached = JSON.parse(localStorage.getItem(cacheKey) || 'null');
+                if (cached && cached.data &&
+                    Number(cached.data.type_id) === id &&
+                    Number.isFinite(cached.cachedAt) &&
+                    Date.now() - cached.cachedAt < MINING_REF_CACHE_TTL_MS) {
+                    return cached.data;
+                }
+            } catch (cacheReadError) {
+                // Continue with the network request if cached data cannot be read.
+            }
+
+            const response = await fetch('https://ref-data.everef.net/types/' + id);
+            if (!response.ok) {
+                throw new Error('EVE Ref lookup failed for type ' + id + ' (HTTP ' + response.status + ')');
+            }
+
+            const data = await response.json();
+            if (!data || Number(data.type_id) !== id) {
+                throw new Error('EVE Ref returned invalid data for type ' + id);
+            }
+
+            try {
+                localStorage.setItem(cacheKey, JSON.stringify({ cachedAt: Date.now(), data: data }));
+            } catch (cacheWriteError) {
+                // The live response is still usable when browser storage is unavailable.
+            }
+            return data;
+        })();
+
+        miningReferenceTypePromises.set(id, request);
+        try {
+            return await request;
+        } catch (error) {
+            miningReferenceTypePromises.delete(id);
+            throw error;
+        }
+    }
+
+    // Process a large type list with a bounded number of concurrent requests.
+    // Results retain input order, regardless of individual request completion time.
+    async function mapMiningItemsWithConcurrency(items, concurrency, mapper) {
+        const source = Array.from(items || []);
+        if (source.length === 0) return [];
+
+        const requestedLimit = Math.floor(Number(concurrency)) || 1;
+        const workerCount = Math.min(source.length, Math.max(1, requestedLimit));
+        const results = new Array(source.length);
+        let nextIndex = 0;
+
+        async function worker() {
+            while (true) {
+                const index = nextIndex++;
+                if (index >= source.length) return;
+                results[index] = await mapper(source[index], index, source);
+            }
+        }
+
+        await Promise.all(Array.from({ length: workerCount }, () => worker()));
+        return results;
+    }
+
     const industrySkillLevels = { industry: 0, advancedIndustry: 0 };
 
     function renderSkillLevelTiles(scope, skill, selectedLevel) {
