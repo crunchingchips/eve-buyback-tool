@@ -220,6 +220,11 @@
                         <label class="block text-[10px] text-gray-400 uppercase font-bold mb-1.5"><i class="fas fa-layer-group mr-1 text-gray-500"></i> <span data-i18n="runsLabel">Runs:</span></label>
                         <input type="number" id="runsInput" value="1" min="1" oninput="updateMathLive()" class="w-full bg-[#09090b] border border-gray-600 p-2 font-mono text-lg text-white rounded outline-none text-center focus:border-yellow-500 transition-colors">
                     </div>
+
+                    <div class="border-t border-gray-800/70 pt-3 mt-3">
+                        <div class="text-[10px] text-gray-400 uppercase font-bold tracking-widest mb-2" data-i18n="indSkillsTitle">Character Skills</div>
+                        <div id="industrySkillSelectors" class="flex flex-col gap-3"></div>
+                    </div>
                 </div>
 
                 <div class="flex-grow flex flex-col justify-between bg-[#121214] rounded-xl border border-gray-700/80 panel-glow p-4 lg:p-5 min-w-0">
@@ -315,17 +320,23 @@
                         <div class="text-[11px] text-gray-400 uppercase font-bold mb-4 tracking-widest border-b border-gray-800/50 pb-2" data-i18n="minShip">Ship Capabilities</div>
                         <div class="grid grid-cols-3 gap-4">
                             <div>
-                                <label class="block text-[9px] text-gray-500 uppercase font-bold mb-1 truncate" data-i18n="minYield">Yield (m³)</label>
+                                <label class="block text-[9px] text-gray-500 uppercase font-bold mb-1 truncate" data-i18n="minYield">Base yield / cycle (m³)</label>
                                 <input type="number" id="miningYield" value="1000" class="w-full bg-[#09090b] border border-gray-600 p-2 font-mono text-sm text-gray-200 rounded outline-none focus:border-yellow-500 transition-colors text-center">
                             </div>
                             <div>
-                                <label class="block text-[9px] text-gray-500 uppercase font-bold mb-1 truncate" data-i18n="minCycle">Cycle (s)</label>
+                                <label class="block text-[9px] text-gray-500 uppercase font-bold mb-1 truncate" data-i18n="minCycle">Base cycle (s)</label>
                                 <input type="number" id="miningCycle" value="60" class="w-full bg-[#09090b] border border-gray-600 p-2 font-mono text-sm text-gray-200 rounded outline-none focus:border-yellow-500 transition-colors text-center">
                             </div>
                             <div>
                                 <label class="block text-[9px] text-gray-500 uppercase font-bold mb-1 truncate" data-i18n="minHold">Hold (m³)</label>
                                 <input type="number" id="miningHold" value="5000" class="w-full bg-[#09090b] border border-gray-600 p-2 font-mono text-sm text-gray-200 rounded outline-none focus:border-yellow-500 transition-colors text-center">
                             </div>
+                        </div>
+
+                        <div class="mt-4 border-t border-gray-800/70 pt-4">
+                            <div class="text-[10px] text-gray-400 uppercase font-bold tracking-widest mb-1" data-i18n="minSkillsTitle">Character Skills</div>
+                            <p class="text-[10px] leading-relaxed text-gray-500 mb-3" data-i18n="minSkillsHelp">Set levels 0–V. Yield/cycle above should exclude these selected skill bonuses; include ship, module, crystal, rig and fleet bonuses yourself.</p>
+                            <div id="miningSkillSelectors" class="grid grid-cols-1 sm:grid-cols-3 gap-3"></div>
                         </div>
                     </div>
 
@@ -445,7 +456,13 @@
             col3Title: '<i class="fas fa-chart-line mr-2"></i> Costs & Income', matCost: "Material Cost:", statTax: "Tax & Fees:",
             totCost: "Total Cost:", mktVal: "Market Value:", estProfit: "ESTIMATED PROFIT", prodTime: '<i class="fas fa-clock mr-1"></i> Est. Time:',
             
-            minShip: "Ship Capabilities", minYield: "Yield (m³)", minCycle: "Cycle (s)", minHold: "Hold (m³)",
+            minShip: "Ship Capabilities", minYield: "Base yield / cycle (m³)", minCycle: "Base cycle (s)", minHold: "Hold (m³)",
+            minSkillsTitle: "Character Skills", minSkillsHelp: "Set levels 0–V. Yield/cycle above should exclude these skill bonuses; include ship, module, crystal, rig and fleet bonuses yourself.",
+            skillMining: "Mining", skillAstrogeology: "Astrogeology", skillIceHarvesting: "Ice Harvesting",
+            skillOreBonus: "+5% ore yield / level", skillIceBonus: "−5% ice cycle / level",
+            indSkillsTitle: "Industry Skills", skillIndustry: "Industry", skillAdvancedIndustry: "Advanced Industry",
+            skillIndustryBonus: "−4% manufacturing time / level", skillAdvancedIndustryBonus: "−3% job time / level",
+            skillLevel0: "Untrained",
             minFilters: "Market & Filters", minTarget: "Target Market", minRef: "Refining Yield (%)", minLoc: "Location Filter",
             cbAst: "Standard Ore", cbIce: "Ice", cbMoon: "Moon Ore", cbGas: "Gas (WH/K-Space)", cbComp: "Use Compressed Prices",
             minRank: "Intelligence Ranking", minSort: "Sorted by ISK / Hour", minCol1: "Resource & Logic", minCol2: "Best Price", minCol5: "Hold Value",
@@ -469,9 +486,15 @@
             col3Title: '<i class="fas fa-chart-line mr-2"></i> Koszty i Zysk', matCost: "Koszt Materiałów:", statTax: "Podatki (SCI + Stacja):",
             totCost: "Całkowity Koszt:", mktVal: "Wartość Rynkowa:", estProfit: "SZACOWANY ZYSK", prodTime: '<i class="fas fa-clock mr-1"></i> Czas:',
             
-            minShip: "Parametry Statku", minYield: "Uzysk (m³)", minCycle: "Cykl (s)", minHold: "Ładownia (m³)",
-            minFilters: "Rynek i Filtry", minTarget: "Docelowy Rynek", minRef: "Wydajność Przetopu (%)", minLoc: "Filtry Lokacji",
-            cbAst: "Zwykłe Rudy", cbIce: "Lód (Ice)", cbMoon: "Ruda Księżycowa", cbGas: "Gaz (WH / K-Space)", cbComp: "Użyj Cen Skompresowanych",
+            minShip: "Parametry statku", minYield: "Bazowy uzysk / cykl (m³)", minCycle: "Bazowy cykl (s)", minHold: "Ładownia (m³)",
+            minSkillsTitle: "Skille postaci", minSkillsHelp: "Ustaw poziomy 0–V. Bazowy uzysk/cykl nie może zawierać bonusów wybranych tu skilli; bonusy statku, modułów, kryształów, rigów i floty uwzględnij osobno.",
+            skillMining: "Mining", skillAstrogeology: "Astrogeology", skillIceHarvesting: "Ice Harvesting",
+            skillOreBonus: "+5% uzysku rudy / poziom", skillIceBonus: "−5% cyklu lodu / poziom",
+            indSkillsTitle: "Skille przemysłowe", skillIndustry: "Industry", skillAdvancedIndustry: "Advanced Industry",
+            skillIndustryBonus: "−4% czasu produkcji / poziom", skillAdvancedIndustryBonus: "−3% czasu zlecenia / poziom",
+            skillLevel0: "Nie wytrenowano",
+            minFilters: "Rynek i filtry", minTarget: "Docelowy rynek", minRef: "Wydajność przetopu (%)", minLoc: "Filtr lokalizacji",
+            cbAst: "Rudy asteroidowe", cbIce: "Lód (Ice)", cbMoon: "Rudy księżycowe", cbGas: "Gaz (WH / K-Space)", cbComp: "Użyj cen skompresowanych",
             minRank: "Ranking Opłacalności", minSort: "Sortowane wg ISK / Godzinę", minCol1: "Surowiec i Logika", minCol2: "Najlepsza Cena", minCol5: "Wartość Ładowni",
             minRaw: "Sprzedaż Rudy", minRefined: "Przetopione", minMin: "min", minCalcBtn: "Oblicz Zysk"
         }
@@ -499,6 +522,7 @@
         document.querySelectorAll('[data-i18n]').forEach(el => {
             if(d[el.getAttribute('data-i18n')]) el.innerHTML = d[el.getAttribute('data-i18n')];
         });
+        if (typeof renderSkillSelectors === 'function') renderSkillSelectors();
         if(appState.materials.length > 0) renderTables();
     }
 
@@ -959,7 +983,13 @@
         document.getElementById('col2List').innerHTML = col2Html;
 
         // Poprawiony wzór na czas (każdy poziom TE to 2% skrócenia czasu)
-        let totalSeconds = appState.baseTime * (1 - ((appState.te * 2) / 100)) * appState.runs;
+        const industrySkillTimeMultiplier =
+            (1 - 0.04 * industrySkillLevels.industry) *
+            (1 - 0.03 * industrySkillLevels.advancedIndustry);
+        let totalSeconds = appState.baseTime *
+            (1 - ((appState.te * 2) / 100)) *
+            industrySkillTimeMultiplier *
+            appState.runs;
 
         const totalTaxRate = appState.sciPercentage + appState.facilityTax; 
         const taxCost = totalMatCost * (totalTaxRate / 100);
@@ -1057,6 +1087,66 @@
     let miningReferenceDataPromise = null;
     const MINING_REF_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 
+    const miningSkillLevels = { mining: 0, astrogeology: 0, iceHarvesting: 0 };
+    const industrySkillLevels = { industry: 0, advancedIndustry: 0 };
+
+    function renderSkillLevelTiles(scope, skill, selectedLevel) {
+        const labels = ['0', 'I', 'II', 'III', 'IV', 'V'];
+        return '<div class="flex flex-wrap gap-1 mt-1" role="group" aria-label="' + skill + ' skill level">' +
+            labels.map((label, level) => {
+                const selected = level === selectedLevel;
+                const classes = selected
+                    ? 'h-7 w-7 rounded border border-yellow-300 bg-yellow-500 text-[10px] font-mono font-black text-black shadow-sm transition-colors'
+                    : 'h-7 w-7 rounded border border-gray-700 bg-[#09090b] text-[10px] font-mono font-bold text-gray-400 hover:border-yellow-500 hover:text-white transition-colors';
+                const title = level === 0 ? globalI18n[currentLang].skillLevel0 : 'Level ' + label;
+                return '<button type="button" data-skill-scope="' + scope + '" data-skill-name="' + skill +
+                    '" data-skill-level="' + level + '" aria-pressed="' + selected + '" title="' + title +
+                    '" onclick="setSkillLevel(\'' + scope + '\',\'' + skill + '\',' + level + ')" class="' + classes + '">' +
+                    label + '</button>';
+            }).join('') + '</div>';
+    }
+
+    function renderSkillSelectors() {
+        const text = globalI18n[currentLang];
+        const miningContainer = document.getElementById('miningSkillSelectors');
+        if (miningContainer) {
+            miningContainer.innerHTML = [
+                { id: 'mining', label: text.skillMining, bonus: text.skillOreBonus, level: miningSkillLevels.mining },
+                { id: 'astrogeology', label: text.skillAstrogeology, bonus: text.skillOreBonus, level: miningSkillLevels.astrogeology },
+                { id: 'iceHarvesting', label: text.skillIceHarvesting, bonus: text.skillIceBonus, level: miningSkillLevels.iceHarvesting }
+            ].map(skill => '<div><div class="flex flex-wrap items-baseline justify-between gap-x-2">' +
+                '<span class="text-[10px] text-gray-300 font-bold">' + skill.label + '</span>' +
+                '<span class="text-[9px] text-gray-600">' + skill.bonus + '</span></div>' +
+                renderSkillLevelTiles('mining', skill.id, skill.level) + '</div>').join('');
+        }
+
+        const industryContainer = document.getElementById('industrySkillSelectors');
+        if (industryContainer) {
+            industryContainer.innerHTML = [
+                { id: 'industry', label: text.skillIndustry, bonus: text.skillIndustryBonus, level: industrySkillLevels.industry },
+                { id: 'advancedIndustry', label: text.skillAdvancedIndustry, bonus: text.skillAdvancedIndustryBonus, level: industrySkillLevels.advancedIndustry }
+            ].map(skill => '<div><div class="flex flex-wrap items-baseline justify-between gap-x-1">' +
+                '<span class="text-[10px] text-gray-300 font-bold">' + skill.label + '</span>' +
+                '<span class="text-[9px] text-gray-600">' + skill.bonus + '</span></div>' +
+                renderSkillLevelTiles('industry', skill.id, skill.level) + '</div>').join('');
+        }
+    }
+
+    function setSkillLevel(scope, skill, level) {
+        const state = scope === 'mining' ? miningSkillLevels : scope === 'industry' ? industrySkillLevels : null;
+        if (!state || !(skill in state)) return;
+        const parsedLevel = Number(level);
+        if (!Number.isInteger(parsedLevel) || parsedLevel < 0 || parsedLevel > 5) return;
+        state[skill] = parsedLevel;
+        renderSkillSelectors();
+
+        if (scope === 'mining') {
+            runMiningAnalysis();
+        } else if (scope === 'industry' && appState.materials.length > 0) {
+            updateMathLive();
+        }
+    }
+
     async function mapMiningItemsWithConcurrency(items, concurrency, mapper) {
         const output = new Array(items.length);
         let nextIndex = 0;
@@ -1130,42 +1220,68 @@
                 async family => ({ family: family, data: await fetchMiningReferenceType(family.typeId) })
             );
 
-            // EVE Ref groups ore variation IDs by asteroid meta level; do not
-            // rely on a fixed array position to identify raw/compressed variants.
+            // EVE Ref groups ore variation IDs by asteroid meta level. Each group can
+            // contain raw, batch-compressed and modern compressed types. Fetch every
+            // referenced type but keep only types belonging to the requested ore family.
             const typeRequests = new Map();
             familyRecords.forEach(({ family, data }) => {
-                typeRequests.set(Number(data.type_id), { family: family, typeId: Number(data.type_id) });
+                typeRequests.set(family.typeId + ':' + Number(data.type_id), {
+                    family: family, typeId: Number(data.type_id)
+                });
                 Object.values(data.ore_variations || {}).forEach(ids => {
                     if (!Array.isArray(ids)) return;
                     ids.forEach(id => {
                         const typeId = Number(id);
-                        if (Number.isInteger(typeId) && typeId > 0 && !typeRequests.has(typeId)) {
-                            typeRequests.set(typeId, { family: family, typeId: typeId });
+                        if (Number.isInteger(typeId) && typeId > 0) {
+                            typeRequests.set(family.typeId + ':' + typeId, { family: family, typeId: typeId });
                         }
                     });
                 });
             });
 
+            const normalizeOreName = value => String(value || '').toLowerCase()
+                .replace(/^batch\s+compressed\s+/, '')
+                .replace(/^compressed\s+/, '')
+                .replace(/[^a-z0-9]/g, '');
+
             const records = await mapMiningItemsWithConcurrency(
                 Array.from(typeRequests.values()),
                 8,
                 async descriptor => {
-                    const familyRecord = familyRecords.find(record => record.family.typeId === descriptor.family.typeId);
-                    const info = descriptor.typeId === descriptor.family.typeId
-                        ? (familyRecord && familyRecord.data)
-                        : await fetchMiningReferenceType(descriptor.typeId);
-                    if (!info || !info.type_materials) return null;
-
-                    const minerals = {};
-                    Object.entries(info.type_materials).forEach(([materialId, material]) => {
-                        const quantity = Number(material && material.quantity);
-                        if (Number(materialId) > 0 && Number.isFinite(quantity) && quantity > 0) {
-                            minerals[Number(materialId)] = quantity;
-                        }
-                    });
-                    if (Object.keys(minerals).length === 0) return null;
+                    let info;
+                    if (descriptor.typeId === descriptor.family.typeId) {
+                        const familyRecord = familyRecords.find(record => record.family.typeId === descriptor.family.typeId);
+                        info = familyRecord && familyRecord.data;
+                    } else {
+                        info = await fetchMiningReferenceType(descriptor.typeId);
+                    }
+                    if (!info) return null;
 
                     const name = (info.name && (info.name.en || info.name)) || ('Type ' + descriptor.typeId);
+                    const normalizedName = normalizeOreName(name);
+                    const familyName = normalizeOreName(descriptor.family.name);
+
+                    // ore_variations can also reference mission-only and extracted-ore
+                    // entries, plus other high-quality ores. Avoid ranking those as if
+                    // they were ordinary versions of this family's asteroid ore.
+                    if (!normalizedName.startsWith(familyName) ||
+                        /\b0-grade\b/i.test(name) ||
+                        /\bx-grade\b/i.test(name)) {
+                        return null;
+                    }
+
+                    const minerals = {};
+                    Object.entries(info.type_materials || {}).forEach(([key, material]) => {
+                        const materialId = Number(material && material.material_type_id) || Number(key);
+                        const quantity = Number(material && material.quantity);
+                        if (Number.isInteger(materialId) && materialId > 0 &&
+                            Number.isFinite(quantity) && quantity > 0) {
+                            minerals[materialId] = quantity;
+                        }
+                    });
+
+                    const isBatchCompressed = /^batch\s+compressed\s+/i.test(name);
+                    const isCompressed = /^compressed\s+/i.test(name) && !isBatchCompressed;
                     return {
                         name: name,
                         typeId: Number(info.type_id),
@@ -1177,7 +1293,8 @@
                         minerals: minerals,
                         familyTypeId: descriptor.family.typeId,
                         isReferenceOre: true,
-                        isCompressed: /compressed/i.test(name)
+                        isCompressed: isCompressed,
+                        isBatchCompressed: isBatchCompressed
                     };
                 }
             );
@@ -1185,14 +1302,11 @@
             const validTypes = records.filter(item =>
                 item && Number.isInteger(item.typeId) &&
                 Number.isFinite(item.vol) && item.vol > 0 &&
-                Number.isFinite(item.portionSize) && item.portionSize > 0 &&
-                Object.keys(item.minerals).length > 0
+                Number.isFinite(item.portionSize) && item.portionSize > 0
             );
-            const rawTypes = validTypes.filter(item => !item.isCompressed);
-            const normalizeOreName = value => String(value || '').toLowerCase()
-                .replace(/^compressed\s+/, '')
-                .replace(/\s*\(compressed\)\s*$/, '')
-                .replace(/[^a-z0-9]/g, '');
+            const rawTypes = validTypes.filter(item =>
+                !item.isCompressed && !item.isBatchCompressed && Object.keys(item.minerals).length > 0
+            );
 
             rawTypes.forEach(item => {
                 const target = normalizeOreName(item.name);
@@ -1202,14 +1316,14 @@
                     normalizeOreName(candidate.name) === target
                 );
                 item.compressedTypeId = compressed ? compressed.typeId : null;
-                item.compressedPortionSize = compressed ? compressed.portionSize : null;
             });
 
             const missingFamilies = baseMiningFamilies.filter(family =>
                 !rawTypes.some(item => item.familyTypeId === family.typeId && item.typeId === family.typeId)
             );
             if (missingFamilies.length > 0) {
-                throw new Error('EVE Ref returned incomplete base ore data: ' + missingFamilies.map(family => family.name).join(', '));
+                throw new Error('EVE Ref returned incomplete base ore data: ' +
+                    missingFamilies.map(family => family.name).join(', '));
             }
             return rawTypes;
         })().catch(error => {
@@ -1249,11 +1363,13 @@
 
             if (document.getElementById('filterAsteroids').checked) {
                 const asteroidVariants = await loadAsteroidOreVariants();
-                list.push(...asteroidVariants.map(item => Object.assign({}, item, { minerals: Object.assign({}, item.minerals) })));
+                list.push(...asteroidVariants.map(item => Object.assign({}, item, {
+                    minerals: Object.assign({}, item.minerals), resourceKind: 'ore'
+                })));
             }
-            if (document.getElementById('filterIce').checked) list.push(...baseMiningGroups.ice.map(item => Object.assign({}, item)));
-            if (document.getElementById('filterGas').checked) list.push(...baseMiningGroups.gas.map(item => Object.assign({}, item)));
-            if (document.getElementById('filterMoon').checked) list.push(...baseMiningGroups.moon.map(item => Object.assign({}, item)));
+            if (document.getElementById('filterIce').checked) list.push(...baseMiningGroups.ice.map(item => Object.assign({}, item, { resourceKind: 'ice' })));
+            if (document.getElementById('filterGas').checked) list.push(...baseMiningGroups.gas.map(item => Object.assign({}, item, { resourceKind: 'gas' })));
+            if (document.getElementById('filterMoon').checked) list.push(...baseMiningGroups.moon.map(item => Object.assign({}, item, { resourceKind: 'ore' })));
 
             list = list.filter(item => {
                 const locations = Array.isArray(item.locs) ? item.locs : [item.loc];
@@ -1315,22 +1431,12 @@
             if (!priceResponse.ok) throw new Error('Market aggregate request failed (HTTP ' + priceResponse.status + ')');
             const priceData = await priceResponse.json();
 
-            const m3h = (yieldM3 / cycle) * 3600;
+            const miningOreYieldMultiplier =
+                (1 + 0.05 * miningSkillLevels.mining) *
+                (1 + 0.05 * miningSkillLevels.astrogeology);
             const final = list.map(item => {
                 let marketPrice = Number(priceData[item.currentId] && priceData[item.currentId].buy && priceData[item.currentId].buy.max) || 0;
                 let priceSource = useComp && item.compressedTypeId && item.currentId === item.compressedTypeId ? 'compressed' : 'raw';
-
-                // Normalize compressed-unit price to one raw-ore unit using the
-                // reprocessing portion sizes. Never compare unlike price units.
-                if (priceSource === 'compressed') {
-                    const compressedPortion = Number(item.compressedPortionSize);
-                    const rawPortion = Number(item.portionSize);
-                    if (compressedPortion > 0 && rawPortion > 0) {
-                        marketPrice = marketPrice * compressedPortion / rawPortion;
-                    } else {
-                        marketPrice = 0;
-                    }
-                }
 
                 // If compressed price is missing or cannot be normalized, use raw price.
                 if (useComp && priceSource === 'compressed' && marketPrice <= 0) {
@@ -1350,6 +1456,11 @@
 
                 const best = Math.max(marketPrice, refineValue);
                 const iskM3 = best / item.vol;
+                const itemYield = item.resourceKind === 'ore' ? yieldM3 * miningOreYieldMultiplier : yieldM3;
+                const itemCycle = item.resourceKind === 'ice'
+                    ? cycle * (1 - 0.05 * miningSkillLevels.iceHarvesting)
+                    : cycle;
+                const itemM3h = (itemYield / itemCycle) * 3600;
                 return {
                     ...item,
                     marketPrice: marketPrice,
@@ -1357,7 +1468,7 @@
                     refineValue: refineValue,
                     best: best,
                     iskM3: iskM3,
-                    iskh: m3h * iskM3,
+                    iskh: itemM3h * iskM3,
                     isRef: refineValue > marketPrice
                 };
             }).filter(item => Number.isFinite(item.iskh) && Number.isFinite(item.iskM3))
