@@ -474,7 +474,7 @@
             skillLevel0: "Untrained",
             minFilters: "Market & Filters", minTarget: "Target Market", minRef: "Refining Yield (%)", minLoc: "Location Filter",
             cbAst: "Standard Ore", cbIce: "Ice", cbMoon: "Moon Ore", cbGas: "Gas (WH/K-Space)", cbComp: "Use Compressed Prices",
-            minRank: "Intelligence Ranking", minSort: "Sorted by ISK / Hour", minCol1: "Resource & Logic", minCol2: "Best Price", minCol5: "Hold Value",
+            minRank: "Intelligence Ranking", minSort: "Sorted by ISK / Hour", minCol1: "Resource & Logic", minCol2: "Best option / unit", minCol5: "Hold Value",
             minRaw: "Highest buy order", minRefined: "Refined", minMin: "min", minCalcBtn: "Calculate Profit"
         },
         pl: {
@@ -503,7 +503,7 @@
             skillLevel0: "Nie wytrenowano",
             minFilters: "Rynek i filtry", minTarget: "Docelowy rynek", minRef: "Wydajność przetopu (%)", minLoc: "Filtr lokalizacji",
             cbAst: "Rudy asteroidowe", cbIce: "Lód (Ice)", cbMoon: "Rudy księżycowe", cbGas: "Gaz (WH / K-Space)", cbComp: "Użyj cen skompresowanych",
-            minRank: "Ranking Opłacalności", minSort: "Sortowane wg ISK / Godzinę", minCol1: "Surowiec i Logika", minCol2: "Najlepsza Cena", minCol5: "Wartość Ładowni",
+            minRank: "Ranking Opłacalności", minSort: "Sortowane wg ISK / Godzinę", minCol1: "Surowiec i Logika", minCol2: "Najlepsza opcja / szt.", minCol5: "Wartość Ładowni",
             minRaw: "Zlecenie kupna", minRefined: "Przetopione", minMin: "min", minCalcBtn: "Oblicz Zysk"
         }
     };
@@ -1552,6 +1552,18 @@
                         ? (currentLang === 'pl' ? 'ZLECENIE KUPNA · SUROWA RUDA (BRAK CENY COMP.)' : 'RAW ORE BUY ORDER (COMPRESSED UNAVAILABLE)')
                         : (currentLang === 'pl' ? 'ZLECENIE KUPNA · SUROWA RUDA' : 'RAW ORE BUY ORDER');
                 const locations = (Array.isArray(item.locs) ? item.locs : [item.loc]).filter(Boolean).join('/');
+                const decisionLabel = item.marketPrice <= 0 && item.refineValue <= 0
+                    ? (currentLang === 'pl' ? 'BRAK DANYCH CENOWYCH' : 'NO PRICE DATA')
+                    : item.isRef
+                        ? (currentLang === 'pl' ? 'LEPIEJ PRZETOPIĆ' : 'REFINE FOR MORE')
+                        : (currentLang === 'pl' ? 'LEPIEJ SPRZEDAĆ RUDĘ' : 'SELL ORE FOR MORE');
+                const decisionClass = item.marketPrice <= 0 && item.refineValue <= 0
+                    ? 'bg-gray-800 text-gray-400'
+                    : item.isRef
+                        ? 'bg-sky-900/50 text-sky-300'
+                        : 'bg-emerald-900/50 text-emerald-300';
+                const orePriceText = Number(item.marketPrice).toLocaleString(numberLocale, { minimumFractionDigits: 3, maximumFractionDigits: 3 });
+                const refinedPriceText = Number(item.refineValue).toLocaleString(numberLocale, { minimumFractionDigits: 3, maximumFractionDigits: 3 });
                 const iconTypeId = item.typeId || item.currentId;
                 results.innerHTML +=
                     "<div class='grid grid-cols-12 gap-2 p-3 " + (index === 0 ? "bg-yellow-500/10 border-yellow-500/50" : "bg-[#09090b] border-gray-800/50") + " rounded border text-xs font-mono items-center text-right transition-all'>"
