@@ -416,6 +416,10 @@
     </div>
 
 <script>
+    // Stan referencji inicjalizujemy przed rejestracją obsługi UI, aby uniknąć błędu TDZ.
+    let miningReferenceDataPromise = null;
+    const miningReferenceTypePromises = new Map();
+
     // ==========================================
     // 1. WSPÓLNE LOGIKI (TABS & JĘZYK)
     // ==========================================
@@ -1080,8 +1084,6 @@
         ]
     };
 
-    const miningReferenceTypePromises = new Map();
-    let miningReferenceDataPromise = null;
     const MINING_REF_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 
     const industrySkillLevels = { industry: 0, advancedIndustry: 0 };
