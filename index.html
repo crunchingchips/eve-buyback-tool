@@ -1312,7 +1312,18 @@
 
             await mapMiningItemsWithConcurrency(list, 8, async item => {
                 if (item.isReferenceOre) {
-                    item.currentId = useComp && item.compressedTypeId ? item.compressedTypeId : item.typeId;
+                    // EVE Ref's ore_variations lists raw ore grades. Compressed
+                    // variants are separate market types, so resolve their IDs by name.
+                    let compressedTypeId = Number(item.compressedTypeId) || 0;
+                    if (useComp && !compressedTypeId) {
+                        try {
+                            compressedTypeId = await lookupTypeId('Compressed ' + item.name);
+                        } catch (lookupError) {
+                            console.warn('Compressed type lookup failed for ' + item.name + '; using raw ore price.', lookupError);
+                        }
+                    }
+                    item.compressedTypeId = compressedTypeId || null;
+                    item.currentId = useComp && compressedTypeId ? compressedTypeId : item.typeId;
                     item.displayName = item.name;
                     return;
                 }
