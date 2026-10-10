@@ -1187,6 +1187,7 @@
                     loc: descriptor.family.loc,
                     locs: descriptor.family.locs,
                     crystal: descriptor.family.crystal,
+                    familyTypeId: descriptor.family.typeId,
                     minerals: minerals,
                     oreGrade: descriptor.grade,
                     isReferenceOre: true
@@ -1199,8 +1200,11 @@
                 Object.keys(item.minerals).length > 0
             );
 
-            if (validTypes.length < baseMiningFamilies.length) {
-                throw new Error('EVE Ref returned an incomplete asteroid dataset.');
+            const missingFamilies = baseMiningFamilies.filter(family =>
+                !validTypes.some(item => item.familyTypeId === family.typeId && item.oreGrade === 1)
+            );
+            if (missingFamilies.length > 0) {
+                throw new Error('EVE Ref returned incomplete base ore data: ' + missingFamilies.map(family => family.name).join(', '));
             }
             return validTypes;
         })().catch(error => {
