@@ -1038,7 +1038,16 @@
     function toggleLoc(loc) {
         activeLocs[loc] = !activeLocs[loc];
         document.getElementById('loc-' + loc).style.opacity = activeLocs[loc] ? "1" : "0.3";
-        runMiningAnalysis();
+
+        // Filters only change the setup. Scanning starts only when the user clicks Calculate Profit.
+        const results = document.getElementById('miningResults');
+        if (results) {
+            results.innerHTML = "<div class='p-8 text-center text-gray-500'>"
+                + (currentLang === 'pl'
+                    ? 'Filtry zmienione. Kliknij „Oblicz Zysk”, aby przeliczyć ranking.'
+                    : 'Filters changed. Click “Calculate Profit” to refresh the ranking.')
+                + '</div>';
+        }
     }
 
 
