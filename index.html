@@ -382,7 +382,7 @@
                 </div>
 
                 <div class="xl:col-span-3 flex flex-col gap-4">
-                    <div class="h-[650px] max-h-[calc(100vh-190px)] min-h-0 bg-[#121214] rounded-xl border border-gray-700/80 overflow-hidden panel-glow flex flex-col">
+                    <div class="h-[650px] max-h-[calc(100vh_-_190px)] min-h-0 bg-[#121214] rounded-xl border border-gray-700/80 overflow-hidden panel-glow flex flex-col">
                         <div class="bg-[#18181b] p-3 px-5 border-b border-gray-700 flex justify-between items-center z-10">
                             <span class="text-yellow-500 font-bold uppercase tracking-widest text-[11px]" data-i18n="minRank">Intelligence Ranking</span>
                             <span class="text-gray-400 font-mono text-[10px]" data-i18n="minSort">Sorted by ISK / Hour</span>
@@ -1613,7 +1613,7 @@
                         : (currentLang === 'pl' ? miningResultLabels.pl.sourceRaw : miningResultLabels.en.sourceRaw);
                 const locations = (Array.isArray(item.locs) ? item.locs : [item.loc])
                     .filter(Boolean)
-                    .map(location => ({ high: 'HIGH-SEC', low: 'LOW-SEC', null: 'NULL/WH' }[location] || String(location).toUpperCase())
+                    .map(location => ({ high: 'HIGH-SEC', low: 'LOW-SEC', null: 'NULL/WH' }[location] || String(location).toUpperCase()))
                     .join(' / ');
                 const hasPriceData = item.marketPrice > 0 || item.refineValue > 0;
                 const decisionKey = !hasPriceData ? 'missing' : item.isRef ? 'refine' : 'sell';
