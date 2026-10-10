@@ -87,9 +87,9 @@
         .autocomplete-items div strong { color: #fff; font-weight: 900; }
     </style>
 </head>
-<body class="p-4 md:p-6 pb-16 min-h-screen">
+<body class="px-3 sm:px-4 md:px-5 pt-4 md:pt-6 pb-16 min-h-screen">
 
-    <div class="max-w-[1400px] mx-auto relative">
+    <div class="max-w-[1700px] mx-auto relative">
 
         <header class="mb-6 border-b border-gray-800/50 pb-2 flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
             <div>
@@ -382,7 +382,7 @@
                 </div>
 
                 <div class="xl:col-span-3 flex flex-col gap-4">
-                    <div class="h-[650px] max-h-[calc(100vh_-_190px)] min-h-0 bg-[#121214] rounded-xl border border-gray-700/80 overflow-hidden panel-glow flex flex-col">
+                    <div class="h-[680px] max-h-[calc(100vh_-_90px)] min-h-0 bg-[#121214] rounded-xl border border-gray-700/80 overflow-hidden panel-glow flex flex-col">
                         <div class="bg-[#18181b] p-3 px-5 border-b border-gray-700 flex justify-between items-center z-10">
                             <span class="text-yellow-500 font-bold uppercase tracking-widest text-[11px]" data-i18n="minRank">Intelligence Ranking</span>
                             <span class="text-gray-400 font-mono text-[10px]" data-i18n="minSort">Sorted by ISK / Hour</span>
@@ -513,8 +513,8 @@
     const miningResultLabels = {
         en: {
             sourceRaw: "RAW ORE · BUY ORDER",
-            sourceCompressed: "COMPRESSED ORE · BUY ORDER",
-            sourceRawFallback: "RAW ORE · COMPRESSED PRICE UNAVAILABLE",
+            sourceCompressed: "COMPRESSED · BUY ORDER",
+            sourceRawFallback: "RAW ORE · NO COMPRESSED PRICE",
             decisionSell: "SELL RAW ORE",
             decisionRefine: "REFINE ORE",
             decisionMissing: "PRICE DATA MISSING",
@@ -524,9 +524,9 @@
             detailRefine: "Refine:"
         },
         pl: {
-            sourceRaw: "SUROWA RUDA · ZLECENIE KUPNA",
-            sourceCompressed: "SKOMPRESOWANA RUDA · ZLECENIE KUPNA",
-            sourceRawFallback: "SUROWA RUDA · BRAK CENY SKOMP.",
+            sourceRaw: "SUROWA RUDA · SKUP",
+            sourceCompressed: "SKOMPRESOWANA · SKUP",
+            sourceRawFallback: "SUROWA RUDA · BRAK CENY COMP.",
             decisionSell: "SPRZEDAJ RUDĘ",
             decisionRefine: "PRZETOP RUDĘ",
             decisionMissing: "BRAK DANYCH CENOWYCH",
