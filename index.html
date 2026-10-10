@@ -320,11 +320,11 @@
                         <div class="text-[11px] text-gray-400 uppercase font-bold mb-4 tracking-widest border-b border-gray-800/50 pb-2" data-i18n="minShip">Ship Capabilities</div>
                         <div class="grid grid-cols-3 gap-4">
                             <div>
-                                <label class="block text-[9px] text-gray-500 uppercase font-bold mb-1 truncate" data-i18n="minYield">Base yield / cycle (m³)</label>
+                                <label id="miningYieldLabel" class="block text-[9px] text-gray-500 uppercase font-bold mb-1 truncate" data-i18n="minYield">Total yield per cycle (m³)</label>
                                 <input type="number" id="miningYield" value="1000" class="w-full bg-[#09090b] border border-gray-600 p-2 font-mono text-sm text-gray-200 rounded outline-none focus:border-yellow-500 transition-colors text-center">
                             </div>
                             <div>
-                                <label class="block text-[9px] text-gray-500 uppercase font-bold mb-1 truncate" data-i18n="minCycle">Base cycle (s)</label>
+                                <label id="miningCycleLabel" class="block text-[9px] text-gray-500 uppercase font-bold mb-1 truncate" data-i18n="minCycle">Effective cycle (s)</label>
                                 <input type="number" id="miningCycle" value="60" class="w-full bg-[#09090b] border border-gray-600 p-2 font-mono text-sm text-gray-200 rounded outline-none focus:border-yellow-500 transition-colors text-center">
                             </div>
                             <div>
@@ -334,9 +334,15 @@
                         </div>
 
                         <div class="mt-4 border-t border-gray-800/70 pt-4">
-                            <div class="text-[10px] text-gray-400 uppercase font-bold tracking-widest mb-1" data-i18n="minSkillsTitle">Character Skills</div>
-                            <p class="text-[10px] leading-relaxed text-gray-500 mb-3" data-i18n="minSkillsHelp">Set levels 0–V. Yield/cycle above should exclude these selected skill bonuses; include ship, module, crystal, rig and fleet bonuses yourself.</p>
-                            <div id="miningSkillSelectors" class="grid grid-cols-1 sm:grid-cols-3 gap-3"></div>
+                            <label class="flex items-center gap-2 cursor-pointer text-xs font-mono text-gray-300 mb-2">
+                                <input type="checkbox" id="applyMiningSkills" class="accent-yellow-500 w-4 h-4" onchange="toggleMiningSkillMode(this.checked)">
+                                <span data-i18n="applyMiningSkills">Calculate these skill bonuses separately</span>
+                            </label>
+                            <p id="miningInputModeHelp" class="text-[10px] leading-relaxed text-gray-500 mb-3" data-i18n="minSkillsHelp">By default, enter the actual total yield and cycle from your fitted setup. Turn on skill calculation only when the input values exclude the skills below.</p>
+                            <div id="miningSkillSettings" class="hidden">
+                                <div class="text-[10px] text-gray-400 uppercase font-bold tracking-widest mb-2" data-i18n="minSkillsTitle">Character Skills</div>
+                                <div id="miningSkillSelectors" class="grid grid-cols-1 sm:grid-cols-3 gap-3"></div>
+                            </div>
                         </div>
                     </div>
 
@@ -456,8 +462,9 @@
             col3Title: '<i class="fas fa-chart-line mr-2"></i> Costs & Income', matCost: "Material Cost:", statTax: "Tax & Fees:",
             totCost: "Total Cost:", mktVal: "Market Value:", estProfit: "ESTIMATED PROFIT", prodTime: '<i class="fas fa-clock mr-1"></i> Est. Time:',
             
-            minShip: "Ship Capabilities", minYield: "Base yield / cycle (m³)", minCycle: "Base cycle (s)", minHold: "Hold (m³)",
-            minSkillsTitle: "Character Skills", minSkillsHelp: "Set levels 0–V. Yield/cycle above should exclude these skill bonuses; include ship, module, crystal, rig and fleet bonuses yourself.",
+            minShip: "Ship Capabilities", minYield: "Total yield per cycle (m³)", minCycle: "Effective cycle (s)", minHold: "Hold (m³)",
+            applyMiningSkills: "Calculate these skill bonuses separately",
+            minSkillsTitle: "Character Skills", minSkillsHelp: "By default, enter the actual total yield and cycle from your fitted setup. Turn on skill calculation only when the input values exclude the skills below.",
             skillMining: "Mining", skillAstrogeology: "Astrogeology", skillIceHarvesting: "Ice Harvesting",
             skillOreBonus: "+5% ore yield / level", skillIceBonus: "−5% ice cycle / level",
             indSkillsTitle: "Industry Skills", skillIndustry: "Industry", skillAdvancedIndustry: "Advanced Industry",
@@ -486,8 +493,9 @@
             col3Title: '<i class="fas fa-chart-line mr-2"></i> Koszty i Zysk', matCost: "Koszt Materiałów:", statTax: "Podatki (SCI + Stacja):",
             totCost: "Całkowity Koszt:", mktVal: "Wartość Rynkowa:", estProfit: "SZACOWANY ZYSK", prodTime: '<i class="fas fa-clock mr-1"></i> Czas:',
             
-            minShip: "Parametry statku", minYield: "Bazowy uzysk / cykl (m³)", minCycle: "Bazowy cykl (s)", minHold: "Ładownia (m³)",
-            minSkillsTitle: "Skille postaci", minSkillsHelp: "Ustaw poziomy 0–V. Bazowy uzysk/cykl nie może zawierać bonusów wybranych tu skilli; bonusy statku, modułów, kryształów, rigów i floty uwzględnij osobno.",
+            minShip: "Parametry statku", minYield: "Łączny urobek / cykl (m³)", minCycle: "Rzeczywisty cykl (s)", minHold: "Ładownia (m³)",
+            applyMiningSkills: "Naliczać osobno bonusy tych skilli",
+            minSkillsTitle: "Skille postaci", minSkillsHelp: "Domyślnie wpisz rzeczywisty łączny urobek i czas cyklu dla swojego zestawu. Włącz osobne naliczanie skilli tylko wtedy, gdy wpisane wartości nie zawierają bonusów poniżej.",
             skillMining: "Mining", skillAstrogeology: "Astrogeology", skillIceHarvesting: "Ice Harvesting",
             skillOreBonus: "+5% uzysku rudy / poziom", skillIceBonus: "−5% cyklu lodu / poziom",
             indSkillsTitle: "Skille przemysłowe", skillIndustry: "Industry", skillAdvancedIndustry: "Advanced Industry",
@@ -523,6 +531,19 @@
             if(d[el.getAttribute('data-i18n')]) el.innerHTML = d[el.getAttribute('data-i18n')];
         });
         if (typeof renderSkillSelectors === 'function') renderSkillSelectors();
+        if (typeof toggleMiningSkillMode === 'function') {
+            const skillMode = document.getElementById('applyMiningSkills');
+            if (skillMode) {
+                const yieldLabel = document.getElementById('miningYieldLabel');
+                const cycleLabel = document.getElementById('miningCycleLabel');
+                if (yieldLabel) yieldLabel.textContent = skillMode.checked
+                    ? (currentLang === 'pl' ? 'Bazowy uzysk / cykl (m³)' : 'Base yield per cycle (m³)')
+                    : (currentLang === 'pl' ? 'Łączny urobek / cykl (m³)' : 'Total yield per cycle (m³)');
+                if (cycleLabel) cycleLabel.textContent = skillMode.checked
+                    ? (currentLang === 'pl' ? 'Bazowy cykl (s)' : 'Base cycle (s)')
+                    : (currentLang === 'pl' ? 'Rzeczywisty cykl (s)' : 'Effective cycle (s)');
+            }
+        }
         if(appState.materials.length > 0) renderTables();
     }
 
@@ -1132,6 +1153,21 @@
         }
     }
 
+    function toggleMiningSkillMode(enabled) {
+        const panel = document.getElementById('miningSkillSettings');
+        const yieldLabel = document.getElementById('miningYieldLabel');
+        const cycleLabel = document.getElementById('miningCycleLabel');
+        if (panel) panel.classList.toggle('hidden', !enabled);
+        if (yieldLabel) yieldLabel.textContent = enabled
+            ? (currentLang === 'pl' ? 'Bazowy uzysk / cykl (m³)' : 'Base yield per cycle (m³)')
+            : (currentLang === 'pl' ? 'Łączny urobek / cykl (m³)' : 'Total yield per cycle (m³)');
+        if (cycleLabel) cycleLabel.textContent = enabled
+            ? (currentLang === 'pl' ? 'Bazowy cykl (s)' : 'Base cycle (s)')
+            : (currentLang === 'pl' ? 'Rzeczywisty cykl (s)' : 'Effective cycle (s)');
+        if (enabled) renderSkillSelectors();
+        runMiningAnalysis();
+    }
+
     function setSkillLevel(scope, skill, level) {
         const state = scope === 'mining' ? miningSkillLevels : scope === 'industry' ? industrySkillLevels : null;
         if (!state || !(skill in state)) return;
@@ -1431,10 +1467,15 @@
             if (!priceResponse.ok) throw new Error('Market aggregate request failed (HTTP ' + priceResponse.status + ')');
             const priceData = await priceResponse.json();
 
-            // Mining and Astrogeology both modify ore yield; combine these
-            // skill bonuses additively before applying ship/module multipliers.
-            const miningOreYieldMultiplier =
-                1 + 0.05 * miningSkillLevels.mining + 0.05 * miningSkillLevels.astrogeology;
+            // Manual values are effective values by default. Only apply these
+            // skill bonuses when the user explicitly enables skill-calculation mode.
+            const applySelectedMiningSkills = document.getElementById('applyMiningSkills').checked;
+            const miningOreYieldMultiplier = applySelectedMiningSkills
+                ? (1 + 0.05 * miningSkillLevels.mining) * (1 + 0.05 * miningSkillLevels.astrogeology)
+                : 1;
+            const iceCycleMultiplier = applySelectedMiningSkills
+                ? (1 - 0.05 * miningSkillLevels.iceHarvesting)
+                : 1;
             const final = list.map(item => {
                 let marketPrice = Number(priceData[item.currentId] && priceData[item.currentId].buy && priceData[item.currentId].buy.max) || 0;
                 let priceSource = useComp && item.compressedTypeId && item.currentId === item.compressedTypeId ? 'compressed' : 'raw';
@@ -1458,9 +1499,7 @@
                 const best = Math.max(marketPrice, refineValue);
                 const iskM3 = best / item.vol;
                 const itemYield = item.resourceKind === 'ore' ? yieldM3 * miningOreYieldMultiplier : yieldM3;
-                const itemCycle = item.resourceKind === 'ice'
-                    ? cycle * (1 - 0.05 * miningSkillLevels.iceHarvesting)
-                    : cycle;
+                const itemCycle = item.resourceKind === 'ice' ? cycle * iceCycleMultiplier : cycle;
                 const itemM3h = (itemYield / itemCycle) * 3600;
                 return {
                     ...item,
@@ -1502,7 +1541,7 @@
                     + "<div class='col-span-2 text-gray-400'>" + Math.floor(item.iskM3).toLocaleString() + "</div>"
                     + "<div class='col-span-2 text-yellow-500 font-bold'>" + Math.floor(item.iskh).toLocaleString() + "</div>"
                     + "<div class='col-span-2 text-gray-200 font-bold'>" + ((hold / item.vol) * item.best / 1000000).toFixed(1) + "M ISK"
-                    + "<div class='text-[9px] text-gray-600'>" + Math.floor((hold / ((item.resourceKind === 'ore' ? yieldM3 * miningOreYieldMultiplier : yieldM3) / (item.resourceKind === 'ice' ? cycle * (1 - 0.05 * miningSkillLevels.iceHarvesting) : cycle))) / 60) + " " + globalI18n[currentLang].minMin + "</div></div></div>";
+                    + "<div class='text-[9px] text-gray-600'>" + Math.floor((hold / ((item.resourceKind === 'ore' ? yieldM3 * miningOreYieldMultiplier : yieldM3) / (item.resourceKind === 'ice' ? cycle * iceCycleMultiplier : cycle))) / 60) + " " + globalI18n[currentLang].minMin + "</div></div></div>";
             });
 
             results.insertAdjacentHTML('beforeend',
