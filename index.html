@@ -1124,89 +1124,94 @@
         if (miningReferenceDataPromise) return miningReferenceDataPromise;
 
         miningReferenceDataPromise = (async () => {
-            const familiesWithData = await mapMiningItemsWithConcurrency(
+            const familyRecords = await mapMiningItemsWithConcurrency(
                 baseMiningFamilies,
                 8,
                 async family => ({ family: family, data: await fetchMiningReferenceType(family.typeId) })
             );
 
-            const descriptors = [];
-            familiesWithData.forEach(({ family, data }) => {
-                const variations = data.ore_variations || {};
-                [1, 2, 3, 4].forEach(grade => {
-                    const ids = variations[String(grade)] || variations[grade];
-                    if (!Array.isArray(ids) || ids.length === 0) return;
-
-                    const oreTypeId = Number(ids[0]);
-                    if (!Number.isInteger(oreTypeId) || oreTypeId <= 0) return;
-
-                    // EVE Ref orders standard variants as raw ore, legacy batch-compressed,
-                    // and modern 1:1 compressed ore. Use the third ID only for its price.
-                    const compressedTypeId = ids.length >= 3 ? (Number(ids[2]) || null) : null;
-                    descriptors.push({
-                        family: family,
-                        grade: grade,
-                        oreTypeId: oreTypeId,
-                        compressedTypeId: compressedTypeId,
-                        baseInfo: Number(data.type_id) === oreTypeId ? data : null
+            // EVE Ref groups ore variation IDs by asteroid meta level; do not
+            // rely on a fixed array position to identify raw/compressed variants.
+            const typeRequests = new Map();
+            familyRecords.forEach(({ family, data }) => {
+                typeRequests.set(Number(data.type_id), { family: family, typeId: Number(data.type_id) });
+                Object.values(data.ore_variations || {}).forEach(ids => {
+                    if (!Array.isArray(ids)) return;
+                    ids.forEach(id => {
+                        const typeId = Number(id);
+                        if (Number.isInteger(typeId) && typeId > 0 && !typeRequests.has(typeId)) {
+                            typeRequests.set(typeId, { family: family, typeId: typeId });
+                        }
                     });
                 });
+            });
 
-                if (!descriptors.some(item => item.family.typeId === family.typeId && item.grade === 1)) {
-                    descriptors.push({
-                        family: family,
-                        grade: 1,
-                        oreTypeId: Number(data.type_id) || family.typeId,
-                        compressedTypeId: null,
-                        baseInfo: data
+            const records = await mapMiningItemsWithConcurrency(
+                Array.from(typeRequests.values()),
+                8,
+                async descriptor => {
+                    const familyRecord = familyRecords.find(record => record.family.typeId === descriptor.family.typeId);
+                    const info = descriptor.typeId === descriptor.family.typeId
+                        ? (familyRecord && familyRecord.data)
+                        : await fetchMiningReferenceType(descriptor.typeId);
+                    if (!info || !info.type_materials) return null;
+
+                    const minerals = {};
+                    Object.entries(info.type_materials).forEach(([materialId, material]) => {
+                        const quantity = Number(material && material.quantity);
+                        if (Number(materialId) > 0 && Number.isFinite(quantity) && quantity > 0) {
+                            minerals[Number(materialId)] = quantity;
+                        }
                     });
+                    if (Object.keys(minerals).length === 0) return null;
+
+                    const name = (info.name && (info.name.en || info.name)) || ('Type ' + descriptor.typeId);
+                    return {
+                        name: name,
+                        typeId: Number(info.type_id),
+                        vol: Number(info.volume),
+                        portionSize: Number(info.portion_size) || 100,
+                        loc: descriptor.family.loc,
+                        locs: descriptor.family.locs,
+                        crystal: descriptor.family.crystal,
+                        minerals: minerals,
+                        familyTypeId: descriptor.family.typeId,
+                        isReferenceOre: true,
+                        isCompressed: /compressed/i.test(name)
+                    };
                 }
-            });
-
-            const oreTypes = await mapMiningItemsWithConcurrency(descriptors, 8, async descriptor => {
-                const info = descriptor.baseInfo || await fetchMiningReferenceType(descriptor.oreTypeId);
-                const materialData = info.type_materials || {};
-                const minerals = {};
-                Object.entries(materialData).forEach(([materialId, material]) => {
-                    const quantity = Number(material && material.quantity);
-                    if (Number(materialId) > 0 && Number.isFinite(quantity) && quantity > 0) {
-                        minerals[Number(materialId)] = quantity;
-                    }
-                });
-
-                if (Object.keys(minerals).length === 0) {
-                    throw new Error('No reprocessing materials found for ' + ((info.name && info.name.en) || descriptor.oreTypeId));
-                }
-
-                return {
-                    name: (info.name && (info.name.en || info.name)) || descriptor.family.name,
-                    typeId: Number(info.type_id),
-                    compressedTypeId: descriptor.compressedTypeId,
-                    vol: Number(info.volume || info.packaged_volume),
-                    portionSize: Number(info.portion_size) || 100,
-                    loc: descriptor.family.loc,
-                    locs: descriptor.family.locs,
-                    crystal: descriptor.family.crystal,
-                    familyTypeId: descriptor.family.typeId,
-                    minerals: minerals,
-                    oreGrade: descriptor.grade,
-                    isReferenceOre: true
-                };
-            });
-
-            const validTypes = oreTypes.filter(item =>
-                Number.isInteger(item.typeId) && item.typeId > 0 &&
-                Number.isFinite(item.vol) && item.vol > 0 &&
-                Object.keys(item.minerals).length > 0
             );
 
+            const validTypes = records.filter(item =>
+                item && Number.isInteger(item.typeId) &&
+                Number.isFinite(item.vol) && item.vol > 0 &&
+                Number.isFinite(item.portionSize) && item.portionSize > 0 &&
+                Object.keys(item.minerals).length > 0
+            );
+            const rawTypes = validTypes.filter(item => !item.isCompressed);
+            const normalizeOreName = value => String(value || '').toLowerCase()
+                .replace(/^compressed\s+/, '')
+                .replace(/\s*\(compressed\)\s*$/, '')
+                .replace(/[^a-z0-9]/g, '');
+
+            rawTypes.forEach(item => {
+                const target = normalizeOreName(item.name);
+                const compressed = validTypes.find(candidate =>
+                    candidate.familyTypeId === item.familyTypeId &&
+                    candidate.isCompressed &&
+                    normalizeOreName(candidate.name) === target
+                );
+                item.compressedTypeId = compressed ? compressed.typeId : null;
+                item.compressedPortionSize = compressed ? compressed.portionSize : null;
+            });
+
             const missingFamilies = baseMiningFamilies.filter(family =>
-                !validTypes.some(item => item.familyTypeId === family.typeId && item.oreGrade === 1)
+                !rawTypes.some(item => item.familyTypeId === family.typeId && item.typeId === family.typeId)
             );
             if (missingFamilies.length > 0) {
                 throw new Error('EVE Ref returned incomplete base ore data: ' + missingFamilies.map(family => family.name).join(', '));
             }
-            return validTypes;
+            return rawTypes;
         })().catch(error => {
             miningReferenceDataPromise = null;
             throw error;
@@ -1315,8 +1320,19 @@
                 let marketPrice = Number(priceData[item.currentId] && priceData[item.currentId].buy && priceData[item.currentId].buy.max) || 0;
                 let priceSource = useComp && item.compressedTypeId && item.currentId === item.compressedTypeId ? 'compressed' : 'raw';
 
-                // If a compressed type has no active buy order, use the raw ore's
-                // market price rather than treating the compressed market value as zero.
+                // Normalize compressed-unit price to one raw-ore unit using the
+                // reprocessing portion sizes. Never compare unlike price units.
+                if (priceSource === 'compressed') {
+                    const compressedPortion = Number(item.compressedPortionSize);
+                    const rawPortion = Number(item.portionSize);
+                    if (compressedPortion > 0 && rawPortion > 0) {
+                        marketPrice = marketPrice * compressedPortion / rawPortion;
+                    } else {
+                        marketPrice = 0;
+                    }
+                }
+
+                // If compressed price is missing or cannot be normalized, use raw price.
                 if (useComp && priceSource === 'compressed' && marketPrice <= 0) {
                     const rawFallback = Number(priceData[item.typeId] && priceData[item.typeId].buy && priceData[item.typeId].buy.max) || 0;
                     if (rawFallback > 0) {
