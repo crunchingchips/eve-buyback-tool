@@ -1431,9 +1431,10 @@
             if (!priceResponse.ok) throw new Error('Market aggregate request failed (HTTP ' + priceResponse.status + ')');
             const priceData = await priceResponse.json();
 
+            // Mining and Astrogeology both modify ore yield; combine these
+            // skill bonuses additively before applying ship/module multipliers.
             const miningOreYieldMultiplier =
-                (1 + 0.05 * miningSkillLevels.mining) *
-                (1 + 0.05 * miningSkillLevels.astrogeology);
+                1 + 0.05 * miningSkillLevels.mining + 0.05 * miningSkillLevels.astrogeology;
             const final = list.map(item => {
                 let marketPrice = Number(priceData[item.currentId] && priceData[item.currentId].buy && priceData[item.currentId].buy.max) || 0;
                 let priceSource = useComp && item.compressedTypeId && item.currentId === item.compressedTypeId ? 'compressed' : 'raw';
@@ -1501,7 +1502,7 @@
                     + "<div class='col-span-2 text-gray-400'>" + Math.floor(item.iskM3).toLocaleString() + "</div>"
                     + "<div class='col-span-2 text-yellow-500 font-bold'>" + Math.floor(item.iskh).toLocaleString() + "</div>"
                     + "<div class='col-span-2 text-gray-200 font-bold'>" + ((hold / item.vol) * item.best / 1000000).toFixed(1) + "M ISK"
-                    + "<div class='text-[9px] text-gray-600'>" + Math.floor((hold / (yieldM3 / cycle)) / 60) + " " + globalI18n[currentLang].minMin + "</div></div></div>";
+                    + "<div class='text-[9px] text-gray-600'>" + Math.floor((hold / ((item.resourceKind === 'ore' ? yieldM3 * miningOreYieldMultiplier : yieldM3) / (item.resourceKind === 'ice' ? cycle * (1 - 0.05 * miningSkillLevels.iceHarvesting) : cycle))) / 60) + " " + globalI18n[currentLang].minMin + "</div></div></div>";
             });
 
             results.insertAdjacentHTML('beforeend',
