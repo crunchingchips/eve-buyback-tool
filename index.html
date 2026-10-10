@@ -475,7 +475,7 @@
             minFilters: "Market & Filters", minTarget: "Target Market", minRef: "Refining Yield (%)", minLoc: "Location Filter",
             cbAst: "Standard Ore", cbIce: "Ice", cbMoon: "Moon Ore", cbGas: "Gas (WH/K-Space)", cbComp: "Use Compressed Prices",
             minRank: "Intelligence Ranking", minSort: "Sorted by ISK / Hour", minCol1: "Resource & Logic", minCol2: "Best Price", minCol5: "Hold Value",
-            minRaw: "Raw Market", minRefined: "Refined", minMin: "min", minCalcBtn: "Calculate Profit"
+            minRaw: "Highest buy order", minRefined: "Refined", minMin: "min", minCalcBtn: "Calculate Profit"
         },
         pl: {
             tabLoot: "Skaner Łupów", tabInd: "Kalkulator Produkcji", tabMin: "Kalkulator Górniczy",
@@ -504,7 +504,7 @@
             minFilters: "Rynek i filtry", minTarget: "Docelowy rynek", minRef: "Wydajność przetopu (%)", minLoc: "Filtr lokalizacji",
             cbAst: "Rudy asteroidowe", cbIce: "Lód (Ice)", cbMoon: "Rudy księżycowe", cbGas: "Gaz (WH / K-Space)", cbComp: "Użyj cen skompresowanych",
             minRank: "Ranking Opłacalności", minSort: "Sortowane wg ISK / Godzinę", minCol1: "Surowiec i Logika", minCol2: "Najlepsza Cena", minCol5: "Wartość Ładowni",
-            minRaw: "Sprzedaż Rudy", minRefined: "Przetopione", minMin: "min", minCalcBtn: "Oblicz Zysk"
+            minRaw: "Zlecenie kupna", minRefined: "Przetopione", minMin: "min", minCalcBtn: "Oblicz Zysk"
         }
     };
     
@@ -1544,12 +1544,13 @@
             results.innerHTML = '';
             const locColors = { high: 'text-green-500', low: 'text-orange-500', null: 'text-red-500' };
 
+            const numberLocale = currentLang === 'pl' ? 'pl-PL' : 'en-US';
             final.forEach((item, index) => {
                 const sourceLabel = item.priceSource === 'compressed'
-                    ? (currentLang === 'pl' ? 'CENA SKOMPRESOWANA' : 'COMPRESSED PRICE')
+                    ? (currentLang === 'pl' ? 'ZLECENIE KUPNA · RUDA SKOMPRESOWANA' : 'COMPRESSED ORE BUY ORDER')
                     : item.priceSource === 'raw-fallback'
-                        ? (currentLang === 'pl' ? 'CENA ZWYKŁEJ RUDY (BRAK ZLECEŃ COMP.)' : 'RAW PRICE FALLBACK')
-                        : (currentLang === 'pl' ? 'CENA ZWYKŁEJ RUDY' : 'RAW ORE PRICE');
+                        ? (currentLang === 'pl' ? 'ZLECENIE KUPNA · SUROWA RUDA (BRAK CENY COMP.)' : 'RAW ORE BUY ORDER (COMPRESSED UNAVAILABLE)')
+                        : (currentLang === 'pl' ? 'ZLECENIE KUPNA · SUROWA RUDA' : 'RAW ORE BUY ORDER');
                 const locations = (Array.isArray(item.locs) ? item.locs : [item.loc]).filter(Boolean).join('/');
                 const iconTypeId = item.typeId || item.currentId;
                 results.innerHTML +=
@@ -1563,12 +1564,12 @@
                     + "<span class='text-[8px] uppercase font-black " + (locColors[item.loc] || 'text-gray-500') + "'>" + locations + "</span>"
                     + "<span class='text-[8px] uppercase px-1 bg-gray-900 text-gray-500 rounded'>" + sourceLabel + "</span>"
                     + "</div></div>"
-                    + "<div class='col-span-2 text-gray-300'>" + Math.floor(item.best).toLocaleString()
+                    + "<div class='col-span-2 text-gray-300'>" + Number(item.best).toLocaleString(numberLocale, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
                     + "<div class='text-[9px] text-gray-600'>" + (item.isRef ? globalI18n[currentLang].minRefined : globalI18n[currentLang].minRaw) + "</div></div>"
-                    + "<div class='col-span-2 text-gray-400'>" + Math.floor(item.iskM3).toLocaleString() + "</div>"
+                    + "<div class='col-span-2 text-gray-400'>" + Number(item.iskM3).toLocaleString(numberLocale, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + "</div>"
                     + "<div class='col-span-2 text-yellow-500 font-bold'>" + Math.floor(item.iskh).toLocaleString() + "</div>"
-                    + "<div class='col-span-2 text-gray-200 font-bold'>" + ((hold / item.vol) * item.best / 1000000).toFixed(1) + "M ISK"
-                    + "<div class='text-[9px] text-gray-600'>" + Math.floor((hold / (yieldM3 / cycle)) / 60) + " " + globalI18n[currentLang].minMin + "</div></div></div>";
+                    + "<div class='col-span-2 text-gray-200 font-bold'>" + ((hold / item.vol) * item.best / 1000000).toLocaleString(numberLocale, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + "M ISK"
+                    + "<div class='text-[9px] text-gray-600'>" + (Math.ceil(hold / yieldM3) * cycle / 60) + " " + globalI18n[currentLang].minMin + "</div></div></div>";
             });
 
             results.insertAdjacentHTML('beforeend',
