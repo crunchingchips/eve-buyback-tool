@@ -1003,25 +1003,33 @@
         runMiningAnalysis();
     }
 
+
+    // Asteroid families are seeded with stable type IDs. Detailed reprocessing
+    // data and every published ore grade (including Grade IV where available)
+    // are read from EVE Ref Reference Data, which merges current SDE/ESI sources.
+    // Reference data docs: https://docs.everef.net/datasets/reference-data.html
+    const baseMiningFamilies = [
+        { name: 'Veldspar', typeId: 1230, loc: 'high', locs: ['high'], crystal: 'Ore Type A' },
+        { name: 'Scordite', typeId: 1228, loc: 'high', locs: ['high'], crystal: 'Ore Type A' },
+        { name: 'Pyroxeres', typeId: 1224, loc: 'high', locs: ['high', 'low', 'null'], crystal: 'Ore Type A' },
+        { name: 'Plagioclase', typeId: 18, loc: 'high', locs: ['high', 'low'], crystal: 'Ore Type A' },
+        { name: 'Omber', typeId: 1227, loc: 'low', locs: ['low'], crystal: 'Ore Type B' },
+        { name: 'Kernite', typeId: 20, loc: 'low', locs: ['low', 'null'], crystal: 'Ore Type B' },
+        { name: 'Jaspet', typeId: 1226, loc: 'low', locs: ['low'], crystal: 'Ore Type B' },
+        { name: 'Hemorphite', typeId: 1231, loc: 'low', locs: ['low'], crystal: 'Ore Type B' },
+        { name: 'Hedbergite', typeId: 21, loc: 'low', locs: ['low'], crystal: 'Ore Type B' },
+        { name: 'Spodumain', typeId: 19, loc: 'null', locs: ['null'], crystal: 'Ore Type C' },
+        { name: 'Dark Ochre', typeId: 1232, loc: 'low', locs: ['low'], crystal: 'Ore Type C' },
+        { name: 'Gneiss', typeId: 1229, loc: 'low', locs: ['low'], crystal: 'Ore Type C' },
+        { name: 'Crokite', typeId: 1225, loc: 'low', locs: ['low'], crystal: 'Ore Type C' },
+        { name: 'Bistot', typeId: 1223, loc: 'null', locs: ['null'], crystal: 'Ore Type C' },
+        { name: 'Arkonor', typeId: 22, loc: 'null', locs: ['null'], crystal: 'Ore Type C' },
+        { name: 'Mercoxit', typeId: 11396, loc: 'null', locs: ['null'], crystal: 'Mercoxit' }
+    ];
+
+    // Non-asteroid resources retain their existing support in this pass.
+    // Their complete variation/reprocessing data will be audited separately.
     const baseMiningGroups = {
-        asteroids: [
-            { name: 'Veldspar', vol: 0.1, loc: 'high', crystal: 'Ore Type A', minerals: {34: 415} }, 
-            { name: 'Scordite', vol: 0.15, loc: 'high', crystal: 'Ore Type A', minerals: {34: 346, 35: 173} },
-            { name: 'Pyroxeres', vol: 0.3, loc: 'high', crystal: 'Ore Type A', minerals: {34: 351, 35: 25, 36: 50, 37: 5} },
-            { name: 'Plagioclase', vol: 0.35, loc: 'high', crystal: 'Ore Type A', minerals: {34: 107, 35: 213, 36: 107} },
-            { name: 'Omber', vol: 0.6, loc: 'low', crystal: 'Ore Type B', minerals: {34: 307, 36: 123, 37: 307} },
-            { name: 'Kernite', vol: 1.2, loc: 'low', crystal: 'Ore Type B', minerals: {34: 134, 36: 267, 37: 134} },
-            { name: 'Jaspet', vol: 2.0, loc: 'low', crystal: 'Ore Type B', minerals: {36: 259, 37: 259, 38: 8} },
-            { name: 'Hemorphite', vol: 3.0, loc: 'low', crystal: 'Ore Type B', minerals: {37: 212, 38: 15, 39: 15} },
-            { name: 'Hedbergite', vol: 3.0, loc: 'low', crystal: 'Ore Type B', minerals: {37: 212, 38: 15, 40: 15} },
-            { name: 'Spodumain', vol: 16.0, loc: 'null', crystal: 'Ore Type A', minerals: {34: 56000, 35: 12050, 36: 2100, 37: 450} },
-            { name: 'Dark Ochre', vol: 8.0, loc: 'null', crystal: 'Ore Type C', minerals: {37: 255, 38: 125, 39: 250} },
-            { name: 'Gneiss', vol: 5.0, loc: 'null', crystal: 'Ore Type C', minerals: {36: 2200, 37: 2200, 38: 400} },
-            { name: 'Crokite', vol: 16.0, loc: 'null', crystal: 'Ore Type C', minerals: {34: 21000, 37: 760, 38: 135} },
-            { name: 'Bistot', vol: 16.0, loc: 'null', crystal: 'Ore Type C', minerals: {34: 12000, 39: 100, 40: 100} },
-            { name: 'Arkonor', vol: 16.0, loc: 'null', crystal: 'Ore Type C', minerals: {34: 10000, 38: 166, 40: 333} },
-            { name: 'Mercoxit', vol: 40.0, loc: 'null', crystal: 'Mercoxit', minerals: {11399: 300} }
-        ],
         ice: [
             { name: 'Clear Icicle', vol: 1000, loc: 'high', crystal: 'Ice', minerals: {} },
             { name: 'Blue Ice', vol: 1000, loc: 'high', crystal: 'Ice', minerals: {} },
@@ -1045,107 +1053,341 @@
         ]
     };
 
+    const miningReferenceTypePromises = new Map();
+    let miningReferenceDataPromise = null;
+    const MINING_REF_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+
+    async function mapMiningItemsWithConcurrency(items, concurrency, mapper) {
+        const output = new Array(items.length);
+        let nextIndex = 0;
+        const workerCount = Math.min(Math.max(1, concurrency), items.length);
+        await Promise.all(Array.from({ length: workerCount }, async () => {
+            while (nextIndex < items.length) {
+                const index = nextIndex++;
+                output[index] = await mapper(items[index], index);
+            }
+        }));
+        return output;
+    }
+
+    function fetchMiningReferenceType(typeId) {
+        const id = Number(typeId);
+        if (!Number.isInteger(id) || id <= 0) {
+            return Promise.reject(new Error('Invalid EVE type ID: ' + typeId));
+        }
+        if (miningReferenceTypePromises.has(id)) {
+            return miningReferenceTypePromises.get(id);
+        }
+
+        const storageKey = 'eveMultitool:miningRefType:' + id;
+        try {
+            const cachedText = localStorage.getItem(storageKey);
+            if (cachedText) {
+                const cached = JSON.parse(cachedText);
+                if (cached && cached.savedAt && Date.now() - cached.savedAt < MINING_REF_CACHE_TTL_MS
+                    && cached.data && Number(cached.data.type_id) === id) {
+                    const cachedPromise = Promise.resolve(cached.data);
+                    miningReferenceTypePromises.set(id, cachedPromise);
+                    return cachedPromise;
+                }
+            }
+        } catch (storageError) {
+            // Private browsing or blocked storage must not prevent the calculator from working.
+        }
+
+        const request = fetch('https://ref-data.everef.net/types/' + id, {
+            headers: { 'Accept': 'application/json' }
+        }).then(async response => {
+            if (!response.ok) {
+                throw new Error('EVE Ref returned HTTP ' + response.status + ' for type ' + id);
+            }
+            const data = await response.json();
+            if (!data || Number(data.type_id) !== id) {
+                throw new Error('EVE Ref returned invalid data for type ' + id);
+            }
+            try {
+                localStorage.setItem(storageKey, JSON.stringify({ savedAt: Date.now(), data: data }));
+            } catch (storageError) {
+                // Continue without persistent cache if storage is unavailable or full.
+            }
+            return data;
+        }).catch(error => {
+            miningReferenceTypePromises.delete(id);
+            throw error;
+        });
+
+        miningReferenceTypePromises.set(id, request);
+        return request;
+    }
+
+    async function loadAsteroidOreVariants() {
+        if (miningReferenceDataPromise) return miningReferenceDataPromise;
+
+        miningReferenceDataPromise = (async () => {
+            const familiesWithData = await mapMiningItemsWithConcurrency(
+                baseMiningFamilies,
+                8,
+                async family => ({ family: family, data: await fetchMiningReferenceType(family.typeId) })
+            );
+
+            const descriptors = [];
+            familiesWithData.forEach(({ family, data }) => {
+                const variations = data.ore_variations || {};
+                [1, 2, 3, 4].forEach(grade => {
+                    const ids = variations[String(grade)] || variations[grade];
+                    if (!Array.isArray(ids) || ids.length === 0) return;
+
+                    const oreTypeId = Number(ids[0]);
+                    if (!Number.isInteger(oreTypeId) || oreTypeId <= 0) return;
+
+                    // EVE Ref orders standard variants as raw ore, legacy batch-compressed,
+                    // and modern 1:1 compressed ore. Use the third ID only for its price.
+                    const compressedTypeId = ids.length >= 3 ? (Number(ids[2]) || null) : null;
+                    descriptors.push({
+                        family: family,
+                        grade: grade,
+                        oreTypeId: oreTypeId,
+                        compressedTypeId: compressedTypeId,
+                        baseInfo: Number(data.type_id) === oreTypeId ? data : null
+                    });
+                });
+
+                if (!descriptors.some(item => item.family.typeId === family.typeId && item.grade === 1)) {
+                    descriptors.push({
+                        family: family,
+                        grade: 1,
+                        oreTypeId: Number(data.type_id) || family.typeId,
+                        compressedTypeId: null,
+                        baseInfo: data
+                    });
+                }
+            });
+
+            const oreTypes = await mapMiningItemsWithConcurrency(descriptors, 8, async descriptor => {
+                const info = descriptor.baseInfo || await fetchMiningReferenceType(descriptor.oreTypeId);
+                const materialData = info.type_materials || {};
+                const minerals = {};
+                Object.entries(materialData).forEach(([materialId, material]) => {
+                    const quantity = Number(material && material.quantity);
+                    if (Number(materialId) > 0 && Number.isFinite(quantity) && quantity > 0) {
+                        minerals[Number(materialId)] = quantity;
+                    }
+                });
+
+                if (Object.keys(minerals).length === 0) {
+                    throw new Error('No reprocessing materials found for ' + ((info.name && info.name.en) || descriptor.oreTypeId));
+                }
+
+                return {
+                    name: (info.name && (info.name.en || info.name)) || descriptor.family.name,
+                    typeId: Number(info.type_id),
+                    compressedTypeId: descriptor.compressedTypeId,
+                    vol: Number(info.volume || info.packaged_volume),
+                    portionSize: Number(info.portion_size) || 100,
+                    loc: descriptor.family.loc,
+                    locs: descriptor.family.locs,
+                    crystal: descriptor.family.crystal,
+                    minerals: minerals,
+                    oreGrade: descriptor.grade,
+                    isReferenceOre: true
+                };
+            });
+
+            const validTypes = oreTypes.filter(item =>
+                Number.isInteger(item.typeId) && item.typeId > 0 &&
+                Number.isFinite(item.vol) && item.vol > 0 &&
+                Object.keys(item.minerals).length > 0
+            );
+
+            if (validTypes.length < baseMiningFamilies.length) {
+                throw new Error('EVE Ref returned an incomplete asteroid dataset.');
+            }
+            return validTypes;
+        })().catch(error => {
+            miningReferenceDataPromise = null;
+            throw error;
+        });
+
+        return miningReferenceDataPromise;
+    }
+
     async function runMiningAnalysis() {
         const yieldM3 = parseFloat(document.getElementById('miningYield').value) || 0;
-        const cycle = parseFloat(document.getElementById('miningCycle').value) || 1;
+        const cycle = parseFloat(document.getElementById('miningCycle').value) || 0;
         const hold = parseFloat(document.getElementById('miningHold').value) || 0;
         const marketId = document.getElementById('miningMarket').value;
-        const eff = parseFloat(document.getElementById('refineYield').value) / 100;
+        const eff = Math.max(0, Math.min(100, parseFloat(document.getElementById('refineYield').value) || 0)) / 100;
         const useComp = document.getElementById('filterCompressed').checked;
         const results = document.getElementById('miningResults');
+
         if (typeof gtag === 'function') {
             gtag('event', 'use_tool', { 'tool_name': 'mining_calc' });
         }
-        results.innerHTML = `<div class='p-10 text-center animate-pulse text-yellow-500'>${globalI18n[currentLang].fetching}</div>`;
+
+        if (yieldM3 <= 0 || cycle <= 0 || hold <= 0) {
+            results.innerHTML = "<div class='p-8 text-center text-red-400'>"
+                + (currentLang === 'pl' ? 'Wydobycie, cykl i ładownia muszą być większe od zera.' : 'Yield, cycle time and hold must be greater than zero.')
+                + '</div>';
+            return;
+        }
+
+        results.innerHTML = "<div class='p-8 text-center animate-pulse text-yellow-500'>"
+            + (currentLang === 'pl' ? 'Wczytywanie danych rud i cen rynkowych...' : 'Loading ore reference data and market prices...')
+            + '</div>';
 
         try {
             let list = [];
-            if(document.getElementById('filterAsteroids').checked) list.push(...baseMiningGroups.asteroids);
-            if(document.getElementById('filterIce').checked) list.push(...baseMiningGroups.ice);
-            if(document.getElementById('filterGas').checked) list.push(...baseMiningGroups.gas);
-            if(document.getElementById('filterMoon').checked) list.push(...baseMiningGroups.moon);
-            
-            list = list.filter(i => activeLocs[i.loc]);
 
-            if(list.length === 0) {
-                results.innerHTML = `<div class='p-10 text-center text-gray-500'>${currentLang === 'pl' ? 'Brak surowców spełniających kryteria.' : 'No resources selected matching the active filters.'}</div>`;
+            if (document.getElementById('filterAsteroids').checked) {
+                const asteroidVariants = await loadAsteroidOreVariants();
+                list.push(...asteroidVariants.map(item => Object.assign({}, item, { minerals: Object.assign({}, item.minerals) })));
+            }
+            if (document.getElementById('filterIce').checked) list.push(...baseMiningGroups.ice.map(item => Object.assign({}, item)));
+            if (document.getElementById('filterGas').checked) list.push(...baseMiningGroups.gas.map(item => Object.assign({}, item)));
+            if (document.getElementById('filterMoon').checked) list.push(...baseMiningGroups.moon.map(item => Object.assign({}, item)));
+
+            list = list.filter(item => {
+                const locations = Array.isArray(item.locs) ? item.locs : [item.loc];
+                return locations.some(location => activeLocs[location]);
+            });
+
+            if (list.length === 0) {
+                results.innerHTML = "<div class='p-8 text-center text-gray-500'>"
+                    + (currentLang === 'pl' ? 'Brak surowców spełniających wybrane filtry.' : 'No resources match the active filters.')
+                    + '</div>';
                 return;
             }
 
-            const mineralIds = [34, 35, 36, 37, 38, 39, 40, 11399]; 
-            
-            for (let i of list) {
-                const search = useComp ? "Compressed " + i.name : i.name;
-                const r = await fetch(`https://www.fuzzwork.co.uk/api/typeid.php?typename=${encodeURIComponent(search)}`);
-                const d = await r.json();
-                
-                if(d.typeID === 0 && useComp) {
-                    const r2 = await fetch(`https://www.fuzzwork.co.uk/api/typeid.php?typename=${encodeURIComponent(i.name)}`);
-                    const d2 = await r2.json();
-                    i.currentId = d2.typeID;
-                    i.displayName = i.name;
-                } else {
-                    i.currentId = d.typeID;
-                    i.displayName = search;
-                }
+            async function lookupTypeId(name) {
+                const response = await fetch('https://www.fuzzwork.co.uk/api/typeid.php?typename=' + encodeURIComponent(name));
+                if (!response.ok) throw new Error('Type lookup failed for ' + name + ' (HTTP ' + response.status + ')');
+                const data = await response.json();
+                return Number(data.typeID) || 0;
             }
 
-            const allIds = [...new Set([...list.map(i=>i.currentId).filter(id => id > 0), ...mineralIds])].join(',');
-            
-            const pRes = await fetch(`https://market.fuzzwork.co.uk/aggregates/?station=${marketId}&types=${allIds}`);
-            const pData = await pRes.json();
+            await mapMiningItemsWithConcurrency(list, 8, async item => {
+                if (item.isReferenceOre) {
+                    item.currentId = useComp && item.compressedTypeId ? item.compressedTypeId : item.typeId;
+                    item.displayName = item.name;
+                    return;
+                }
+
+                const rawTypeId = Number(item.typeId) || await lookupTypeId(item.name);
+                if (!rawTypeId) {
+                    item.skip = true;
+                    return;
+                }
+                item.typeId = rawTypeId;
+                let compressedTypeId = Number(item.compressedTypeId) || 0;
+                if (useComp && !compressedTypeId) {
+                    compressedTypeId = await lookupTypeId('Compressed ' + item.name);
+                }
+                item.compressedTypeId = compressedTypeId || null;
+                item.currentId = useComp && compressedTypeId ? compressedTypeId : rawTypeId;
+                item.displayName = item.name;
+            });
+
+            list = list.filter(item => !item.skip && Number(item.currentId) > 0);
+            if (list.length === 0) {
+                results.innerHTML = "<div class='p-8 text-center text-red-400'>"
+                    + (currentLang === 'pl' ? 'Nie udało się rozpoznać wybranych surowców.' : 'Could not resolve the selected resources.')
+                    + '</div>';
+                return;
+            }
+
+            const priceIds = new Set([34, 35, 36, 37, 38, 39, 40, 11399]);
+            list.forEach(item => {
+                priceIds.add(Number(item.currentId));
+                if (useComp && item.typeId) priceIds.add(Number(item.typeId));
+                Object.keys(item.minerals || {}).forEach(id => priceIds.add(Number(id)));
+            });
+            const allIds = Array.from(priceIds).filter(id => Number.isInteger(id) && id > 0).join(',');
+            const priceResponse = await fetch('https://market.fuzzwork.co.uk/aggregates/?station=' + encodeURIComponent(marketId) + '&types=' + allIds);
+            if (!priceResponse.ok) throw new Error('Market aggregate request failed (HTTP ' + priceResponse.status + ')');
+            const priceData = await priceResponse.json();
 
             const m3h = (yieldM3 / cycle) * 3600;
-            
             const final = list.map(item => {
-                if(!item.currentId || item.currentId === 0) return null;
-                
-                const rawPrice = parseFloat(pData[item.currentId]?.buy.max) || 0;
-                let refValue = 0;
-                
-                if(item.minerals) {
-                    Object.entries(item.minerals).forEach(([mId, q]) => {
-                        refValue += (q * (pData[mId]?.buy.max || 0) * eff) / 100;
-                    });
-                }
-                
-                const best = Math.max(rawPrice, refValue);
-                const iskM3 = best / item.vol;
-                const isRef = refValue > rawPrice;
-                
-                return { ...item, best, iskM3, iskh: m3h * iskM3, isRef };
-            }).filter(i => i !== null).sort((a,b) => b.iskh - a.iskh);
+                let marketPrice = Number(priceData[item.currentId] && priceData[item.currentId].buy && priceData[item.currentId].buy.max) || 0;
+                let priceSource = useComp && item.compressedTypeId && item.currentId === item.compressedTypeId ? 'compressed' : 'raw';
 
-            results.innerHTML = "";
+                // If a compressed type has no active buy order, use the raw ore's
+                // market price rather than treating the compressed market value as zero.
+                if (useComp && priceSource === 'compressed' && marketPrice <= 0) {
+                    const rawFallback = Number(priceData[item.typeId] && priceData[item.typeId].buy && priceData[item.typeId].buy.max) || 0;
+                    if (rawFallback > 0) {
+                        marketPrice = rawFallback;
+                        priceSource = 'raw-fallback';
+                    }
+                }
+
+                let refineValue = 0;
+                const portionSize = Number(item.portionSize) || 100;
+                Object.entries(item.minerals || {}).forEach(([materialId, quantity]) => {
+                    const mineralPrice = Number(priceData[materialId] && priceData[materialId].buy && priceData[materialId].buy.max) || 0;
+                    refineValue += (Number(quantity) * mineralPrice * eff) / portionSize;
+                });
+
+                const best = Math.max(marketPrice, refineValue);
+                const iskM3 = best / item.vol;
+                return {
+                    ...item,
+                    marketPrice: marketPrice,
+                    priceSource: priceSource,
+                    refineValue: refineValue,
+                    best: best,
+                    iskM3: iskM3,
+                    iskh: m3h * iskM3,
+                    isRef: refineValue > marketPrice
+                };
+            }).filter(item => Number.isFinite(item.iskh) && Number.isFinite(item.iskM3))
+              .sort((a, b) => b.iskh - a.iskh);
+
+            results.innerHTML = '';
             const locColors = { high: 'text-green-500', low: 'text-orange-500', null: 'text-red-500' };
 
-            final.forEach((i, idx) => {
-                results.innerHTML += `
-                    <div class="grid grid-cols-12 gap-2 p-3 ${idx===0?'bg-yellow-500/10 border-yellow-500/50':'bg-[#09090b] border-gray-800/50'} rounded border text-xs font-mono items-center text-right transition-all">
-                        <div class="col-span-4 text-left flex flex-col">
-                            <div class="font-bold flex items-center gap-2 ${idx===0?'text-yellow-400':'text-gray-100'}">
-                                <img src="https://images.evetech.net/types/${i.currentId}/icon?size=32" class="w-6 h-6 rounded border border-gray-800">
-                                <span class="truncate">${idx===0?'🥇':''} ${i.displayName} ${i.isRef?'<i class="fas fa-fire text-orange-500" title="Better to Refine!"></i>':''}</span>
-                            </div>
-                            <div class="flex gap-2 mt-1">
-                                <span class="text-[8px] uppercase px-1 bg-gray-800 text-gray-400 rounded">${i.crystal}</span>
-                                <span class="text-[8px] uppercase font-black ${locColors[i.loc]}">${i.loc}</span>
-                            </div>
-                        </div>
-                        <div class="col-span-2 text-gray-300">
-                            ${Math.floor(i.best).toLocaleString()}
-                            <div class="text-[9px] text-gray-600">${i.isRef?globalI18n[currentLang].minRefined:globalI18n[currentLang].minRaw}</div>
-                        </div>
-                        <div class="col-span-2 text-gray-400">${Math.floor(i.iskM3).toLocaleString()}</div>
-                        <div class="col-span-2 text-yellow-500 font-bold">${Math.floor(i.iskh).toLocaleString()}</div>
-                        <div class="col-span-2 text-gray-200 font-bold">
-                            ${((hold/i.vol)*i.best/1000000).toFixed(1)}M ISK
-                            <div class="text-[9px] text-gray-600">${Math.floor((hold / (yieldM3 / cycle)) / 60)} ${globalI18n[currentLang].minMin}</div>
-                        </div>
-                    </div>`;
+            final.forEach((item, index) => {
+                const sourceLabel = item.priceSource === 'compressed'
+                    ? (currentLang === 'pl' ? 'CENA SKOMPRESOWANA' : 'COMPRESSED PRICE')
+                    : item.priceSource === 'raw-fallback'
+                        ? (currentLang === 'pl' ? 'CENA ZWYKŁEJ RUDY (BRAK ZLECEŃ COMP.)' : 'RAW PRICE FALLBACK')
+                        : (currentLang === 'pl' ? 'CENA ZWYKŁEJ RUDY' : 'RAW ORE PRICE');
+                const locations = (Array.isArray(item.locs) ? item.locs : [item.loc]).filter(Boolean).join('/');
+                const iconTypeId = item.typeId || item.currentId;
+                results.innerHTML +=
+                    "<div class='grid grid-cols-12 gap-2 p-3 " + (index === 0 ? "bg-yellow-500/10 border-yellow-500/50" : "bg-[#09090b] border-gray-800/50") + " rounded border text-xs font-mono items-center text-right transition-all'>"
+                    + "<div class='col-span-4 text-left flex flex-col'>"
+                    + "<div class='font-bold flex items-center gap-2 " + (index === 0 ? "text-yellow-400" : "text-gray-100") + "'>"
+                    + "<img src='https://images.evetech.net/types/" + iconTypeId + "/icon?size=32' class='w-6 h-6 rounded border border-gray-800' onerror=\"this.style.display='none'\">"
+                    + "<span class='truncate'>" + (index === 0 ? '🥇 ' : '') + item.displayName + "</span></div>"
+                    + "<div class='flex flex-wrap gap-2 mt-1'>"
+                    + "<span class='text-[8px] uppercase px-1 bg-gray-800 text-gray-400 rounded'>" + item.crystal + "</span>"
+                    + "<span class='text-[8px] uppercase font-black " + (locColors[item.loc] || 'text-gray-500') + "'>" + locations + "</span>"
+                    + "<span class='text-[8px] uppercase px-1 bg-gray-900 text-gray-500 rounded'>" + sourceLabel + "</span>"
+                    + "</div></div>"
+                    + "<div class='col-span-2 text-gray-300'>" + Math.floor(item.best).toLocaleString()
+                    + "<div class='text-[9px] text-gray-600'>" + (item.isRef ? globalI18n[currentLang].minRefined : globalI18n[currentLang].minRaw) + "</div></div>"
+                    + "<div class='col-span-2 text-gray-400'>" + Math.floor(item.iskM3).toLocaleString() + "</div>"
+                    + "<div class='col-span-2 text-yellow-500 font-bold'>" + Math.floor(item.iskh).toLocaleString() + "</div>"
+                    + "<div class='col-span-2 text-gray-200 font-bold'>" + ((hold / item.vol) * item.best / 1000000).toFixed(1) + "M ISK"
+                    + "<div class='text-[9px] text-gray-600'>" + Math.floor((hold / (yieldM3 / cycle)) / 60) + " " + globalI18n[currentLang].minMin + "</div></div></div>";
             });
-        } catch(e) { results.innerHTML = `<div class="p-10 text-center text-red-500 font-sans">Analysis Error: ${e.message}</div>`; }
+
+            results.insertAdjacentHTML('beforeend',
+                "<div class='p-2 text-[9px] text-gray-600'>"
+                + (currentLang === 'pl' ? 'Dane wariantów i przetopu: ' : 'Ore variants and reprocessing data: ')
+                + "<a href='https://docs.everef.net/datasets/reference-data.html' target='_blank' rel='noopener noreferrer' class='underline hover:text-gray-400'>EVE Ref Reference Data</a>"
+                + "</div>"
+            );
+        } catch (error) {
+            console.error('Mining analysis failed:', error);
+            results.innerHTML = "<div class='p-8 text-center text-red-500 font-sans'>"
+                + (currentLang === 'pl' ? 'Błąd analizy: ' : 'Analysis error: ')
+                + String(error && error.message ? error.message : error)
+                + "</div>";
+        }
     }
-</script>
+
+    </script>
 </body>
 </html>
