@@ -320,29 +320,21 @@
                         <div class="text-[11px] text-gray-400 uppercase font-bold mb-4 tracking-widest border-b border-gray-800/50 pb-2" data-i18n="minShip">Ship Capabilities</div>
                         <div class="grid grid-cols-3 gap-4">
                             <div>
-                                <label id="miningYieldLabel" class="block text-[9px] text-gray-500 uppercase font-bold mb-1 truncate" data-i18n="minYield">Total yield per cycle (m³)</label>
-                                <input type="number" id="miningYield" value="1000" class="w-full bg-[#09090b] border border-gray-600 p-2 font-mono text-sm text-gray-200 rounded outline-none focus:border-yellow-500 transition-colors text-center">
+                                <label class="block text-[9px] text-gray-500 uppercase font-bold mb-1 truncate" data-i18n="minYield">Total yield per cycle (m³)</label>
+                                <input type="number" id="miningYield" value="" min="0.001" step="any" placeholder="e.g. 160" class="w-full bg-[#09090b] border border-gray-600 p-2 font-mono text-sm text-gray-200 rounded outline-none focus:border-yellow-500 transition-colors text-center">
                             </div>
                             <div>
-                                <label id="miningCycleLabel" class="block text-[9px] text-gray-500 uppercase font-bold mb-1 truncate" data-i18n="minCycle">Effective cycle (s)</label>
-                                <input type="number" id="miningCycle" value="60" class="w-full bg-[#09090b] border border-gray-600 p-2 font-mono text-sm text-gray-200 rounded outline-none focus:border-yellow-500 transition-colors text-center">
+                                <label class="block text-[9px] text-gray-500 uppercase font-bold mb-1 truncate" data-i18n="minCycle">Effective cycle (s)</label>
+                                <input type="number" id="miningCycle" value="" min="0.001" step="any" placeholder="e.g. 45" class="w-full bg-[#09090b] border border-gray-600 p-2 font-mono text-sm text-gray-200 rounded outline-none focus:border-yellow-500 transition-colors text-center">
                             </div>
                             <div>
                                 <label class="block text-[9px] text-gray-500 uppercase font-bold mb-1 truncate" data-i18n="minHold">Hold (m³)</label>
-                                <input type="number" id="miningHold" value="5000" class="w-full bg-[#09090b] border border-gray-600 p-2 font-mono text-sm text-gray-200 rounded outline-none focus:border-yellow-500 transition-colors text-center">
+                                <input type="number" id="miningHold" value="" min="0.001" step="any" placeholder="e.g. 5000" class="w-full bg-[#09090b] border border-gray-600 p-2 font-mono text-sm text-gray-200 rounded outline-none focus:border-yellow-500 transition-colors text-center">
                             </div>
                         </div>
 
                         <div class="mt-4 border-t border-gray-800/70 pt-4">
-                            <label class="flex items-center gap-2 cursor-pointer text-xs font-mono text-gray-300 mb-2">
-                                <input type="checkbox" id="applyMiningSkills" class="accent-yellow-500 w-4 h-4" onchange="toggleMiningSkillMode(this.checked)">
-                                <span data-i18n="applyMiningSkills">Calculate these skill bonuses separately</span>
-                            </label>
-                            <p id="miningInputModeHelp" class="text-[10px] leading-relaxed text-gray-500 mb-3" data-i18n="minSkillsHelp">By default, enter the actual total yield and cycle from your fitted setup. Turn on skill calculation only when the input values exclude the skills below.</p>
-                            <div id="miningSkillSettings" class="hidden">
-                                <div class="text-[10px] text-gray-400 uppercase font-bold tracking-widest mb-2" data-i18n="minSkillsTitle">Character Skills</div>
-                                <div id="miningSkillSelectors" class="grid grid-cols-1 sm:grid-cols-3 gap-3"></div>
-                            </div>
+                            <p class="text-[10px] leading-relaxed text-gray-500" data-i18n="fitInputsHelp">Enter the total yield per cycle, cycle time and hold capacity from your current fitted ship. These values already include skills, modules, crystals, rigs and fleet boosts, so the tool will not apply those bonuses again.</p>
                         </div>
                     </div>
 
@@ -371,12 +363,13 @@
                             <button onclick="toggleLoc('null')" id="loc-null" class="flex-1 text-[10px] px-2 py-1.5 rounded bg-red-900/30 border border-red-700 text-red-400 transition-all font-bold">NULL/WH</button>
                         </div>
 
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 font-mono text-xs text-gray-300 mb-5 border-t border-gray-800/50 pt-4">
-                            <label class="flex items-center gap-2 cursor-pointer hover:text-white transition-colors truncate"><input type="checkbox" id="filterAsteroids" checked class="accent-yellow-500 w-4 h-4"> <span data-i18n="cbAst">Asteroids</span></label>
-                            <label class="flex items-center gap-2 cursor-pointer hover:text-white transition-colors truncate"><input type="checkbox" id="filterIce" checked class="accent-yellow-500 w-4 h-4"> <span data-i18n="cbIce">Ice</span></label>
-                            <label class="flex items-center gap-2 cursor-pointer hover:text-white transition-colors truncate"><input type="checkbox" id="filterMoon" checked class="accent-yellow-500 w-4 h-4"> <span data-i18n="cbMoon">Moon Ore</span></label>
-                            <label class="flex items-center gap-2 cursor-pointer hover:text-white transition-colors truncate"><input type="checkbox" id="filterGas" checked class="accent-yellow-500 w-4 h-4"> <span data-i18n="cbGas">Gas</span></label>
-                        </div>
+                        <label class="block text-[10px] text-gray-500 uppercase font-bold mb-1" data-i18n="minResourceKind">Fitted setup / resource type</label>
+                        <select id="miningResourceType" class="w-full bg-[#09090b] border border-gray-600 p-2 font-mono text-sm text-yellow-400 rounded outline-none cursor-pointer focus:border-yellow-500 transition-colors mb-5">
+                            <option value="asteroids" data-i18n="resourceAsteroids">Asteroid ores</option>
+                            <option value="ice" data-i18n="resourceIce">Ice</option>
+                            <option value="moon" data-i18n="resourceMoon">Moon ore</option>
+                            <option value="gas" data-i18n="resourceGas">Gas</option>
+                        </select>
                         
                         <div class="border-t border-gray-800/50 pt-4 mb-4">
                             <label class="flex items-center gap-2 cursor-pointer hover:text-white transition-colors text-xs font-mono text-yellow-500"><input type="checkbox" id="filterCompressed" class="accent-yellow-500 w-4 h-4"> <span data-i18n="cbComp">Use Compressed Prices</span></label>
@@ -462,11 +455,9 @@
             col3Title: '<i class="fas fa-chart-line mr-2"></i> Costs & Income', matCost: "Material Cost:", statTax: "Tax & Fees:",
             totCost: "Total Cost:", mktVal: "Market Value:", estProfit: "ESTIMATED PROFIT", prodTime: '<i class="fas fa-clock mr-1"></i> Est. Time:',
             
-            minShip: "Ship Capabilities", minYield: "Total yield per cycle (m³)", minCycle: "Effective cycle (s)", minHold: "Hold (m³)",
-            applyMiningSkills: "Calculate these skill bonuses separately",
-            minSkillsTitle: "Character Skills", minSkillsHelp: "By default, enter the actual total yield and cycle from your fitted setup. Turn on skill calculation only when the input values exclude the skills below.",
-            skillMining: "Mining", skillAstrogeology: "Astrogeology", skillIceHarvesting: "Ice Harvesting",
-            skillOreBonus: "+5% ore yield / level", skillIceBonus: "−5% ice cycle / level",
+            minShip: "Fitted Ship Stats", minYield: "Total yield per cycle (m³)", minCycle: "Effective cycle (s)", minHold: "Hold (m³)",
+            fitInputsHelp: "Enter the total yield per cycle, cycle time and hold capacity from your current fitted ship. These values already include skills, modules, crystals, rigs and fleet boosts, so the tool will not apply those bonuses again.",
+            minResourceKind: "Fitted setup / resource type", resourceAsteroids: "Asteroid ores", resourceIce: "Ice", resourceMoon: "Moon ore", resourceGas: "Gas",
             indSkillsTitle: "Industry Skills", skillIndustry: "Industry", skillAdvancedIndustry: "Advanced Industry",
             skillIndustryBonus: "−4% manufacturing time / level", skillAdvancedIndustryBonus: "−3% job time / level",
             skillLevel0: "Untrained",
@@ -493,11 +484,9 @@
             col3Title: '<i class="fas fa-chart-line mr-2"></i> Koszty i Zysk', matCost: "Koszt Materiałów:", statTax: "Podatki (SCI + Stacja):",
             totCost: "Całkowity Koszt:", mktVal: "Wartość Rynkowa:", estProfit: "SZACOWANY ZYSK", prodTime: '<i class="fas fa-clock mr-1"></i> Czas:',
             
-            minShip: "Parametry statku", minYield: "Łączny urobek / cykl (m³)", minCycle: "Rzeczywisty cykl (s)", minHold: "Ładownia (m³)",
-            applyMiningSkills: "Naliczać osobno bonusy tych skilli",
-            minSkillsTitle: "Skille postaci", minSkillsHelp: "Domyślnie wpisz rzeczywisty łączny urobek i czas cyklu dla swojego zestawu. Włącz osobne naliczanie skilli tylko wtedy, gdy wpisane wartości nie zawierają bonusów poniżej.",
-            skillMining: "Mining", skillAstrogeology: "Astrogeology", skillIceHarvesting: "Ice Harvesting",
-            skillOreBonus: "+5% uzysku rudy / poziom", skillIceBonus: "−5% cyklu lodu / poziom",
+            minShip: "Parametry gotowego fitu", minYield: "Łączny urobek / cykl (m³)", minCycle: "Rzeczywisty cykl (s)", minHold: "Ładownia (m³)",
+            fitInputsHelp: "Wpisz łączny urobek na cykl, czas cyklu i cargo z aktualnego fitu. Wartości zawierają już skille, moduły, kryształy, riggi i bonusy floty, więc kalkulator nie nalicza ich ponownie.",
+            minResourceKind: "Fit / rodzaj surowca", resourceAsteroids: "Rudy asteroidowe", resourceIce: "Lód", resourceMoon: "Rudy księżycowe", resourceGas: "Gaz",
             indSkillsTitle: "Skille przemysłowe", skillIndustry: "Industry", skillAdvancedIndustry: "Advanced Industry",
             skillIndustryBonus: "−4% czasu produkcji / poziom", skillAdvancedIndustryBonus: "−3% czasu zlecenia / poziom",
             skillLevel0: "Nie wytrenowano",
@@ -531,19 +520,6 @@
             if(d[el.getAttribute('data-i18n')]) el.innerHTML = d[el.getAttribute('data-i18n')];
         });
         if (typeof renderSkillSelectors === 'function') renderSkillSelectors();
-        if (typeof toggleMiningSkillMode === 'function') {
-            const skillMode = document.getElementById('applyMiningSkills');
-            if (skillMode) {
-                const yieldLabel = document.getElementById('miningYieldLabel');
-                const cycleLabel = document.getElementById('miningCycleLabel');
-                if (yieldLabel) yieldLabel.textContent = skillMode.checked
-                    ? (currentLang === 'pl' ? 'Bazowy uzysk / cykl (m³)' : 'Base yield per cycle (m³)')
-                    : (currentLang === 'pl' ? 'Łączny urobek / cykl (m³)' : 'Total yield per cycle (m³)');
-                if (cycleLabel) cycleLabel.textContent = skillMode.checked
-                    ? (currentLang === 'pl' ? 'Bazowy cykl (s)' : 'Base cycle (s)')
-                    : (currentLang === 'pl' ? 'Rzeczywisty cykl (s)' : 'Effective cycle (s)');
-            }
-        }
         if(appState.materials.length > 0) renderTables();
     }
 
@@ -1108,7 +1084,6 @@
     let miningReferenceDataPromise = null;
     const MINING_REF_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 
-    const miningSkillLevels = { mining: 0, astrogeology: 0, iceHarvesting: 0 };
     const industrySkillLevels = { industry: 0, advancedIndustry: 0 };
 
     function renderSkillLevelTiles(scope, skill, selectedLevel) {
@@ -1129,18 +1104,6 @@
 
     function renderSkillSelectors() {
         const text = globalI18n[currentLang];
-        const miningContainer = document.getElementById('miningSkillSelectors');
-        if (miningContainer) {
-            miningContainer.innerHTML = [
-                { id: 'mining', label: text.skillMining, bonus: text.skillOreBonus, level: miningSkillLevels.mining },
-                { id: 'astrogeology', label: text.skillAstrogeology, bonus: text.skillOreBonus, level: miningSkillLevels.astrogeology },
-                { id: 'iceHarvesting', label: text.skillIceHarvesting, bonus: text.skillIceBonus, level: miningSkillLevels.iceHarvesting }
-            ].map(skill => '<div><div class="flex flex-wrap items-baseline justify-between gap-x-2">' +
-                '<span class="text-[10px] text-gray-300 font-bold">' + skill.label + '</span>' +
-                '<span class="text-[9px] text-gray-600">' + skill.bonus + '</span></div>' +
-                renderSkillLevelTiles('mining', skill.id, skill.level) + '</div>').join('');
-        }
-
         const industryContainer = document.getElementById('industrySkillSelectors');
         if (industryContainer) {
             industryContainer.innerHTML = [
@@ -1153,97 +1116,14 @@
         }
     }
 
-    function toggleMiningSkillMode(enabled) {
-        const panel = document.getElementById('miningSkillSettings');
-        const yieldLabel = document.getElementById('miningYieldLabel');
-        const cycleLabel = document.getElementById('miningCycleLabel');
-        if (panel) panel.classList.toggle('hidden', !enabled);
-        if (yieldLabel) yieldLabel.textContent = enabled
-            ? (currentLang === 'pl' ? 'Bazowy uzysk / cykl (m³)' : 'Base yield per cycle (m³)')
-            : (currentLang === 'pl' ? 'Łączny urobek / cykl (m³)' : 'Total yield per cycle (m³)');
-        if (cycleLabel) cycleLabel.textContent = enabled
-            ? (currentLang === 'pl' ? 'Bazowy cykl (s)' : 'Base cycle (s)')
-            : (currentLang === 'pl' ? 'Rzeczywisty cykl (s)' : 'Effective cycle (s)');
-        if (enabled) renderSkillSelectors();
-        runMiningAnalysis();
-    }
-
     function setSkillLevel(scope, skill, level) {
-        const state = scope === 'mining' ? miningSkillLevels : scope === 'industry' ? industrySkillLevels : null;
+        const state = scope === 'industry' ? industrySkillLevels : null;
         if (!state || !(skill in state)) return;
         const parsedLevel = Number(level);
         if (!Number.isInteger(parsedLevel) || parsedLevel < 0 || parsedLevel > 5) return;
         state[skill] = parsedLevel;
         renderSkillSelectors();
-
-        if (scope === 'mining') {
-            runMiningAnalysis();
-        } else if (scope === 'industry' && appState.materials.length > 0) {
-            updateMathLive();
-        }
-    }
-
-    async function mapMiningItemsWithConcurrency(items, concurrency, mapper) {
-        const output = new Array(items.length);
-        let nextIndex = 0;
-        const workerCount = Math.min(Math.max(1, concurrency), items.length);
-        await Promise.all(Array.from({ length: workerCount }, async () => {
-            while (nextIndex < items.length) {
-                const index = nextIndex++;
-                output[index] = await mapper(items[index], index);
-            }
-        }));
-        return output;
-    }
-
-    function fetchMiningReferenceType(typeId) {
-        const id = Number(typeId);
-        if (!Number.isInteger(id) || id <= 0) {
-            return Promise.reject(new Error('Invalid EVE type ID: ' + typeId));
-        }
-        if (miningReferenceTypePromises.has(id)) {
-            return miningReferenceTypePromises.get(id);
-        }
-
-        const storageKey = 'eveMultitool:miningRefType:' + id;
-        try {
-            const cachedText = localStorage.getItem(storageKey);
-            if (cachedText) {
-                const cached = JSON.parse(cachedText);
-                if (cached && cached.savedAt && Date.now() - cached.savedAt < MINING_REF_CACHE_TTL_MS
-                    && cached.data && Number(cached.data.type_id) === id) {
-                    const cachedPromise = Promise.resolve(cached.data);
-                    miningReferenceTypePromises.set(id, cachedPromise);
-                    return cachedPromise;
-                }
-            }
-        } catch (storageError) {
-            // Private browsing or blocked storage must not prevent the calculator from working.
-        }
-
-        const request = fetch('https://ref-data.everef.net/types/' + id, {
-            headers: { 'Accept': 'application/json' }
-        }).then(async response => {
-            if (!response.ok) {
-                throw new Error('EVE Ref returned HTTP ' + response.status + ' for type ' + id);
-            }
-            const data = await response.json();
-            if (!data || Number(data.type_id) !== id) {
-                throw new Error('EVE Ref returned invalid data for type ' + id);
-            }
-            try {
-                localStorage.setItem(storageKey, JSON.stringify({ savedAt: Date.now(), data: data }));
-            } catch (storageError) {
-                // Continue without persistent cache if storage is unavailable or full.
-            }
-            return data;
-        }).catch(error => {
-            miningReferenceTypePromises.delete(id);
-            throw error;
-        });
-
-        miningReferenceTypePromises.set(id, request);
-        return request;
+        if (appState.materials.length > 0) updateMathLive();
     }
 
     async function loadAsteroidOreVariants() {
@@ -1397,15 +1277,19 @@
         try {
             let list = [];
 
-            if (document.getElementById('filterAsteroids').checked) {
+            const selectedResourceType = document.getElementById('miningResourceType').value;
+            if (selectedResourceType === 'asteroids') {
                 const asteroidVariants = await loadAsteroidOreVariants();
                 list.push(...asteroidVariants.map(item => Object.assign({}, item, {
                     minerals: Object.assign({}, item.minerals), resourceKind: 'ore'
                 })));
+            } else if (selectedResourceType === 'ice') {
+                list.push(...baseMiningGroups.ice.map(item => Object.assign({}, item, { resourceKind: 'ice' })));
+            } else if (selectedResourceType === 'gas') {
+                list.push(...baseMiningGroups.gas.map(item => Object.assign({}, item, { resourceKind: 'gas' })));
+            } else if (selectedResourceType === 'moon') {
+                list.push(...baseMiningGroups.moon.map(item => Object.assign({}, item, { resourceKind: 'ore' })));
             }
-            if (document.getElementById('filterIce').checked) list.push(...baseMiningGroups.ice.map(item => Object.assign({}, item, { resourceKind: 'ice' })));
-            if (document.getElementById('filterGas').checked) list.push(...baseMiningGroups.gas.map(item => Object.assign({}, item, { resourceKind: 'gas' })));
-            if (document.getElementById('filterMoon').checked) list.push(...baseMiningGroups.moon.map(item => Object.assign({}, item, { resourceKind: 'ore' })));
 
             list = list.filter(item => {
                 const locations = Array.isArray(item.locs) ? item.locs : [item.loc];
@@ -1467,15 +1351,6 @@
             if (!priceResponse.ok) throw new Error('Market aggregate request failed (HTTP ' + priceResponse.status + ')');
             const priceData = await priceResponse.json();
 
-            // Manual values are effective values by default. Only apply these
-            // skill bonuses when the user explicitly enables skill-calculation mode.
-            const applySelectedMiningSkills = document.getElementById('applyMiningSkills').checked;
-            const miningOreYieldMultiplier = applySelectedMiningSkills
-                ? (1 + 0.05 * miningSkillLevels.mining) * (1 + 0.05 * miningSkillLevels.astrogeology)
-                : 1;
-            const iceCycleMultiplier = applySelectedMiningSkills
-                ? (1 - 0.05 * miningSkillLevels.iceHarvesting)
-                : 1;
             const final = list.map(item => {
                 let marketPrice = Number(priceData[item.currentId] && priceData[item.currentId].buy && priceData[item.currentId].buy.max) || 0;
                 let priceSource = useComp && item.compressedTypeId && item.currentId === item.compressedTypeId ? 'compressed' : 'raw';
@@ -1498,9 +1373,7 @@
 
                 const best = Math.max(marketPrice, refineValue);
                 const iskM3 = best / item.vol;
-                const itemYield = item.resourceKind === 'ore' ? yieldM3 * miningOreYieldMultiplier : yieldM3;
-                const itemCycle = item.resourceKind === 'ice' ? cycle * iceCycleMultiplier : cycle;
-                const itemM3h = (itemYield / itemCycle) * 3600;
+                const itemM3h = (yieldM3 / cycle) * 3600;
                 return {
                     ...item,
                     marketPrice: marketPrice,
@@ -1541,7 +1414,7 @@
                     + "<div class='col-span-2 text-gray-400'>" + Math.floor(item.iskM3).toLocaleString() + "</div>"
                     + "<div class='col-span-2 text-yellow-500 font-bold'>" + Math.floor(item.iskh).toLocaleString() + "</div>"
                     + "<div class='col-span-2 text-gray-200 font-bold'>" + ((hold / item.vol) * item.best / 1000000).toFixed(1) + "M ISK"
-                    + "<div class='text-[9px] text-gray-600'>" + Math.floor((hold / ((item.resourceKind === 'ore' ? yieldM3 * miningOreYieldMultiplier : yieldM3) / (item.resourceKind === 'ice' ? cycle * iceCycleMultiplier : cycle))) / 60) + " " + globalI18n[currentLang].minMin + "</div></div></div>";
+                    + "<div class='text-[9px] text-gray-600'>" + Math.floor((hold / (yieldM3 / cycle)) / 60) + " " + globalI18n[currentLang].minMin + "</div></div></div>";
             });
 
             results.insertAdjacentHTML('beforeend',
