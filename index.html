@@ -352,7 +352,7 @@
 
                         <label class="block text-[10px] text-gray-500 uppercase font-bold mb-1" data-i18n="minRef">Refining Yield (%)</label>
                         <div class="flex items-center gap-3 mb-5">
-                            <input type="range" id="refineYield" min="50" max="90" step="0.5" value="50" class="flex-grow accent-yellow-500 cursor-pointer" oninput="this.nextElementSibling.innerText = Number(this.value).toLocaleString(currentLang === 'pl' ? 'pl-PL' : 'en-US', { maximumFractionDigits: 1 }) + '%'">
+                            <input type="range" id="refineYield" min="50" max="90" step="0.5" value="50" class="flex-grow accent-yellow-500 cursor-pointer" oninput="this.value = (Math.round(parseFloat(this.value) * 2) / 2).toFixed(1); this.nextElementSibling.innerText = Number(this.value).toLocaleString(currentLang === 'pl' ? 'pl-PL' : 'en-US', { minimumFractionDigits: 0, maximumFractionDigits: 1 }) + '%'">
                             <span class="text-xs font-mono text-yellow-500 w-8">50%</span>
                         </div>
 
