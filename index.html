@@ -352,8 +352,11 @@
 
                         <label class="block text-[10px] text-gray-500 uppercase font-bold mb-1" data-i18n="minRef">Refining Yield (%)</label>
                         <div class="flex items-center gap-3 mb-5">
-                            <input type="range" id="refineYield" min="50" max="90" step="0.5" value="50" class="flex-grow accent-yellow-500 cursor-pointer" oninput="this.value = (Math.round(parseFloat(this.value) * 2) / 2).toFixed(1); this.nextElementSibling.innerText = Number(this.value).toLocaleString(currentLang === 'pl' ? 'pl-PL' : 'en-US', { minimumFractionDigits: 0, maximumFractionDigits: 1 }) + '%'">
-                            <span class="text-xs font-mono text-yellow-500 w-8">50%</span>
+                            <input type="range" id="refineYield" min="50" max="90" step="0.5" value="50" class="flex-grow accent-yellow-500 cursor-pointer" oninput="document.getElementById('refineYieldExact').value = Number(this.value).toFixed(1)">
+                            <div class="flex items-center gap-1">
+                                <input type="number" id="refineYieldExact" min="50" max="90" step="0.5" value="50" aria-label="Refining Yield (%)" class="w-16 bg-[#09090b] border border-gray-700 rounded px-1.5 py-1 text-xs font-mono text-yellow-500 text-center" oninput="if (this.value !== '') { const v = Math.max(50, Math.min(90, Math.round(Number(this.value) * 2) / 2)); document.getElementById('refineYield').value = v; }" onblur="const v = Math.max(50, Math.min(90, Math.round((parseFloat(this.value) || 50) * 2) / 2)); this.value = v.toLocaleString(currentLang === 'pl' ? 'pl-PL' : 'en-US', { maximumFractionDigits: 1 }); document.getElementById('refineYield').value = v">
+                                <span class="text-xs font-mono text-yellow-500">%</span>
+                            </div>
                         </div>
 
                         <label class="block text-[10px] text-gray-500 uppercase font-bold mb-2" data-i18n="minLoc">Location Filter</label>
@@ -588,6 +591,15 @@
         });
         if (typeof renderSkillSelectors === 'function') renderSkillSelectors();
         if (typeof refreshMiningLocalizedLabels === 'function') refreshMiningLocalizedLabels();
+        const miningResultsText = document.getElementById('miningResults')?.innerText || '';
+        if (miningResultsText.includes('Filtry zmienione.') || miningResultsText.includes('Filters changed.')) {
+            renderMiningFilterNotice();
+        }
+        const refineYield = document.getElementById('refineYield');
+        const refineYieldExact = document.getElementById('refineYieldExact');
+        if (refineYield && refineYieldExact) {
+            refineYieldExact.value = Number(refineYield.value).toLocaleString(lang === 'pl' ? 'pl-PL' : 'en-US', { maximumFractionDigits: 1 });
+        }
         if(appState.materials.length > 0) renderTables();
     }
 
@@ -1092,19 +1104,22 @@
     // 4. LOGIKA MINING TOOL (ULTIMATE NINJA)
     // ==========================================
     let activeLocs = { high: true, low: true, null: true };
+    function renderMiningFilterNotice() {
+        const results = document.getElementById('miningResults');
+        if (!results) return;
+        results.innerHTML = "<div class='p-8 text-center text-gray-500'>"
+            + (currentLang === 'pl'
+                ? 'Filtry zmienione. Kliknij „Oblicz Zysk”, aby przeliczyć ranking.'
+                : 'Filters changed. Click “Calculate Profit” to refresh the ranking.')
+            + '</div>';
+    }
+
     function toggleLoc(loc) {
         activeLocs[loc] = !activeLocs[loc];
         document.getElementById('loc-' + loc).style.opacity = activeLocs[loc] ? "1" : "0.3";
 
         // Filters only change the setup. Scanning starts only when the user clicks Calculate Profit.
-        const results = document.getElementById('miningResults');
-        if (results) {
-            results.innerHTML = "<div class='p-8 text-center text-gray-500'>"
-                + (currentLang === 'pl'
-                    ? 'Filtry zmienione. Kliknij „Oblicz Zysk”, aby przeliczyć ranking.'
-                    : 'Filters changed. Click “Calculate Profit” to refresh the ranking.')
-                + '</div>';
-        }
+        renderMiningFilterNotice();
     }
 
 
