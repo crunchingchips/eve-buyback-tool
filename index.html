@@ -352,9 +352,9 @@
 
                         <label class="block text-[10px] text-gray-500 uppercase font-bold mb-1" data-i18n="minRef">Refining Yield (%)</label>
                         <div class="flex items-center gap-3 mb-5">
-                            <input type="range" id="refineYield" min="50" max="90" step="0.5" value="50" class="flex-grow accent-yellow-500 cursor-pointer" oninput="document.getElementById('refineYieldExact').value = Number(this.value).toFixed(1)">
+                            <input type="range" id="refineYieldSlider" min="0" max="80" step="1" value="0" aria-label="Refining Yield slider" class="flex-grow accent-yellow-500 cursor-pointer" oninput="const v = 50 + Number(this.value) * 0.5; document.getElementById('refineYield').value = v.toFixed(1); document.getElementById('refineYieldExact').value = v.toFixed(1)">
                             <div class="flex items-center gap-1">
-                                <input type="number" id="refineYieldExact" min="50" max="90" step="0.5" value="50" aria-label="Refining Yield (%)" class="w-16 bg-[#09090b] border border-gray-700 rounded px-1.5 py-1 text-xs font-mono text-yellow-500 text-center" oninput="if (this.value !== '') { const v = Math.max(50, Math.min(90, Math.round(Number(this.value) * 2) / 2)); document.getElementById('refineYield').value = v; }" onblur="const v = Math.max(50, Math.min(90, Math.round((parseFloat(this.value) || 50) * 2) / 2)); this.value = v.toLocaleString(currentLang === 'pl' ? 'pl-PL' : 'en-US', { maximumFractionDigits: 1 }); document.getElementById('refineYield').value = v">
+                                <input type="number" id="refineYield" min="50" max="90" step="0.5" value="50" aria-label="Refining Yield (%)" class="w-16 bg-[#09090b] border border-gray-700 rounded px-1.5 py-1 text-xs font-mono text-yellow-500 text-center" oninput="if (this.value !== '') { const v = Math.max(50, Math.min(90, Math.round(Number(this.value) * 2) / 2); document.getElementById('refineYieldSlider').value = (v - 50) * 2; document.getElementById('refineYieldExact').value = v.toFixed(1); }">
                                 <span class="text-xs font-mono text-yellow-500">%</span>
                             </div>
                         </div>
@@ -597,8 +597,11 @@
         }
         const refineYield = document.getElementById('refineYield');
         const refineYieldExact = document.getElementById('refineYieldExact');
-        if (refineYield && refineYieldExact) {
-            refineYieldExact.value = Number(refineYield.value).toLocaleString(lang === 'pl' ? 'pl-PL' : 'en-US', { maximumFractionDigits: 1 });
+        const refineYieldSlider = document.getElementById('refineYieldSlider');
+        if (refineYield && refineYieldExact && refineYieldSlider) {
+            const yieldValue = Number(refineYield.value);
+            refineYieldExact.value = yieldValue.toLocaleString(lang === 'pl' ? 'pl-PL' : 'en-US', { maximumFractionDigits: 1 });
+            refineYieldSlider.value = (yieldValue - 50) * 2;
         }
         if(appState.materials.length > 0) renderTables();
     }
